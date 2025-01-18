@@ -1,4 +1,4 @@
-﻿package vec2
+package pkg
 
 type Vec2 struct {
 	X int
