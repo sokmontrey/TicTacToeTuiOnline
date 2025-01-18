@@ -5,11 +5,11 @@ type Vec2 struct {
 	Y int
 }
 
-func New(x int, y int) Vec2 {
+func NewVec2(x int, y int) Vec2 {
 	return Vec2{x, y}
 }
 
-func Zero() Vec2 {
+func ZeroVec2() Vec2 {
 	return Vec2{0, 0}
 }
 
