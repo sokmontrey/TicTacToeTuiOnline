@@ -32,7 +32,10 @@ func NewLobby() *Lobby {
 }
 
 func (l *Lobby) Start(port string) {
+	// TODO: password for each room
+	// TODO: public rooms list
 	l.ginEngine.GET("/create-room", l.handleCreateRoom)
+	l.ginEngine.GET("/join", l.handleJoin)
 
 	if os.Getenv("PORT") != "" {
 		port = os.Getenv("PORT")
@@ -42,15 +45,12 @@ func (l *Lobby) Start(port string) {
 	log.Fatal(l.ginEngine.Run(":" + port))
 }
 
-func (l *Lobby) validateNumPlayers(numPlayersStr string) (int, error) {
-	numPlayers, err := strconv.Atoi(numPlayersStr)
-	if err != nil {
-		return 0, errors.New("invalid num-players")
-	}
-	if numPlayers < MinPlayers || numPlayers > MaxPlayers {
-		return 0, errors.New(fmt.Sprintf("num-players must be between %d and %d", MinPlayers, MaxPlayers))
-	}
-	return numPlayers, nil
+// ============================================================================
+// Handlers
+// ============================================================================
+
+func (l *Lobby) handleJoin(c *gin.Context) {
+
 }
 
 // handleCreateRoom handles the request to create a new room.
@@ -69,6 +69,21 @@ func (l *Lobby) handleCreateRoom(c *gin.Context) {
 	room.Start()
 	c.JSON(http.StatusOK, gin.H{"id": id})
 	l.mu.Unlock()
+}
+
+// ============================================================================
+// Helpers
+// ============================================================================
+
+func (l *Lobby) validateNumPlayers(numPlayersStr string) (int, error) {
+	numPlayers, err := strconv.Atoi(numPlayersStr)
+	if err != nil {
+		return 0, errors.New("invalid num-players")
+	}
+	if numPlayers < MinPlayers || numPlayers > MaxPlayers {
+		return 0, errors.New(fmt.Sprintf("num-players must be between %d and %d", MinPlayers, MaxPlayers))
+	}
+	return numPlayers, nil
 }
 
 func (l *Lobby) generateRoomId() string {
