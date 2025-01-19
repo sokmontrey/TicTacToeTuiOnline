@@ -54,3 +54,27 @@ func TestLobby_CreateRoom_InvalidNumPlayers(t *testing.T) {
 		t.Errorf("expected error response, got %v", got)
 	}
 }
+
+func TestLobby_NumRoomsCreated(t *testing.T) {
+	lobby := NewLobby()
+	go lobby.Start("1113")
+
+	numPlayers := 3
+	url := fmt.Sprintf("http://localhost:1113/create-room?num-players=%d", numPlayers)
+	got1 := request(t, url, http.StatusOK)
+
+	if lobby.CountRooms() != 1 {
+		t.Errorf("got %d rooms, wanted 1", lobby.CountRooms())
+	}
+
+	url = fmt.Sprintf("http://localhost:1113/create-room?num-players=%d", numPlayers)
+	got2 := request(t, url, http.StatusOK)
+
+	if got1["id"] == got2["id"] {
+		t.Errorf("got same id for two consecutive room creations")
+	}
+
+	if lobby.CountRooms() != 2 {
+		t.Errorf("got %d rooms, wanted 2", lobby.CountRooms())
+	}
+}

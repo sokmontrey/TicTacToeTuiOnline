@@ -37,11 +37,12 @@ func (l *Lobby) Start(port string) {
 	if os.Getenv("PORT") != "" {
 		port = os.Getenv("PORT")
 	}
+
 	log.Println("Listening the lobby server on port", port)
 	log.Fatal(l.ginEngine.Run(":" + port))
 }
 
-func (l *Lobby) ValidateNumPlayers(numPlayersStr string) (int, error) {
+func (l *Lobby) validateNumPlayers(numPlayersStr string) (int, error) {
 	numPlayers, err := strconv.Atoi(numPlayersStr)
 	if err != nil {
 		return 0, errors.New("invalid num-players")
@@ -56,13 +57,13 @@ func (l *Lobby) ValidateNumPlayers(numPlayersStr string) (int, error) {
 // Endpoint example: http://localhost:8080/create-room?num-players=3
 func (l *Lobby) handleCreateRoom(c *gin.Context) {
 	numPlayersStr := c.Query("num-players")
-	numPlayers, err := l.ValidateNumPlayers(numPlayersStr)
+	numPlayers, err := l.validateNumPlayers(numPlayersStr)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 	l.mu.Lock()
-	id := l.GenerateRoomId()
+	id := l.generateRoomId()
 	room := NewRoom(numPlayers, id)
 	l.rooms[id] = room
 	room.Start()
@@ -70,7 +71,7 @@ func (l *Lobby) handleCreateRoom(c *gin.Context) {
 	l.mu.Unlock()
 }
 
-func (l *Lobby) GenerateRoomId() string {
+func (l *Lobby) generateRoomId() string {
 	// TODO: Use a better algorithm for generating room ids with less collisions
 	id := pkg.GenerateId(NumIdDigits)
 	_, ok := l.rooms[id]
@@ -79,4 +80,12 @@ func (l *Lobby) GenerateRoomId() string {
 		_, ok = l.rooms[id]
 	}
 	return id
+}
+
+// ============================================================================
+// Getters
+// ============================================================================
+
+func (l *Lobby) CountRooms() int {
+	return len(l.rooms)
 }
