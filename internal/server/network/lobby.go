@@ -1,4 +1,4 @@
-﻿package network
+package network
 
 import (
 	"errors"
@@ -38,7 +38,7 @@ func (l *Lobby) Start(port string) {
 	// TODO: password for each room
 	// TODO: public rooms list
 	l.ginEngine.GET("/create-room", l.handleCreateRoom)
-	l.ginEngine.GET("/join", l.handleJoin)
+	l.ginEngine.GET("/ws/join", l.handleJoin)
 
 	if os.Getenv("PORT") != "" {
 		port = os.Getenv("PORT")
@@ -52,30 +52,34 @@ func (l *Lobby) Start(port string) {
 // Handlers
 // ============================================================================
 
-// handleJoin handles the request to join a room.
-// Endpoint example: http://localhost:8080/join?room-id=1234
 func (l *Lobby) handleJoin(c *gin.Context) {
+	conn, err := upgrader.Upgrade(c.Writer, c.Request, nil)
+	if err != nil {
+		log.Println("WebSocket upgrade error:", err)
+		return
+	}
+	defer conn.Close()
 	roomId := c.Query("room-id")
 	room, err := l.GetRoom(roomId)
-	if l.responseError(c, err) {
+	if l.resWsError(conn, err) {
 		return
 	}
-	conn, err := upgrader.Upgrade(c.Writer, c.Request, nil)
-	if l.responseError(c, err) {
-		return
-	}
+	// also handle full room
 	err = room.AddClient(conn)
-	if l.responseError(c, err) {
+	if l.resWsError(conn, err) {
 		return
 	}
+	log.Printf("A new client joined room %s", roomId)
+	msg := NewSuccessResponse("joined room " + roomId)
+	conn.WriteJSON(msg)
 }
 
-// handleCreateRoom handles the request to create a new room.
+// handleCreateRoom handles the httpRequest to create a new room.
 // Endpoint example: http://localhost:8080/create-room?num-players=3
 func (l *Lobby) handleCreateRoom(c *gin.Context) {
 	numPlayersStr := c.Query("num-players")
 	numPlayers, err := l.validateNumPlayers(numPlayersStr)
-	if l.responseError(c, err) {
+	if l.resHttpError(c, err) {
 		return
 	}
 	l.mu.Lock()
@@ -83,6 +87,7 @@ func (l *Lobby) handleCreateRoom(c *gin.Context) {
 	room := NewRoom(numPlayers, id)
 	l.rooms[id] = room
 	go room.Start()
+	log.Printf("Created room %s", id)
 	c.JSON(http.StatusOK, gin.H{"id": id})
 	l.mu.Unlock()
 }
@@ -91,7 +96,17 @@ func (l *Lobby) handleCreateRoom(c *gin.Context) {
 // Helpers
 // ============================================================================
 
-func (l *Lobby) responseError(c *gin.Context, err error) bool {
+func (l *Lobby) resWsError(conn *websocket.Conn, err error) bool {
+	if err != nil {
+		msg := NewErrorResponse(err.Error())
+		conn.WriteJSON(msg)
+		conn.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseInternalServerErr, err.Error()))
+		return true
+	}
+	return false
+}
+
+func (l *Lobby) resHttpError(c *gin.Context, err error) bool {
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return true
