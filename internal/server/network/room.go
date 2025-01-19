@@ -6,8 +6,6 @@ import (
 	"sync"
 )
 
-type RoomId string
-
 type GlobalBroadcastState struct {
 	Cells        []game.Cell   `json:"cells"`
 	PlayerId     game.PlayerId `json:"player-id"`
@@ -15,10 +13,27 @@ type GlobalBroadcastState struct {
 }
 
 type Room struct {
-	id              RoomId
+	id              string
 	numPlayers      int
-	game            game.Game
-	clients         map[game.PlayerId]*websocket.Conn
-	mu              sync.Mutex
+	game            *game.Game
+	clients         []*websocket.Conn
 	globalBroadcast chan GlobalBroadcastState
+	mu              sync.Mutex
+}
+
+func NewRoom(numPlayers int, id string) *Room {
+	return &Room{
+		id:              id,
+		numPlayers:      numPlayers,
+		game:            nil, // TODO: NewGame(),
+		clients:         make([]*websocket.Conn, 0, numPlayers),
+		globalBroadcast: make(chan GlobalBroadcastState),
+	}
+}
+
+func (r *Room) Start() {
+}
+
+func (r *Room) IsFull() bool {
+	return len(r.clients) >= r.numPlayers
 }
