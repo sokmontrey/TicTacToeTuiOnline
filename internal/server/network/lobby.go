@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/gin-gonic/gin"
+	"github.com/gorilla/websocket"
 	"github.com/sokmontrey/TicTacToeTuiOnline/pkg"
 	"log"
 	"net/http"
@@ -17,6 +18,8 @@ const (
 	MaxPlayers  = 3
 	NumIdDigits = 4
 )
+
+var upgrader = websocket.Upgrader{}
 
 type Lobby struct {
 	rooms     map[string]*Room
@@ -41,7 +44,7 @@ func (l *Lobby) Start(port string) {
 		port = os.Getenv("PORT")
 	}
 
-	log.Println("Listening the lobby server on port", port)
+	log.Println("Starting a lobby server on port", port)
 	log.Fatal(l.ginEngine.Run(":" + port))
 }
 
@@ -49,8 +52,22 @@ func (l *Lobby) Start(port string) {
 // Handlers
 // ============================================================================
 
+// handleJoin handles the request to join a room.
+// Endpoint example: http://localhost:8080/join?room-id=1234
 func (l *Lobby) handleJoin(c *gin.Context) {
-
+	roomId := c.Query("room-id")
+	room, err := l.GetRoom(roomId)
+	if l.responseError(c, err) {
+		return
+	}
+	conn, err := upgrader.Upgrade(c.Writer, c.Request, nil)
+	if l.responseError(c, err) {
+		return
+	}
+	err = room.AddClient(conn)
+	if l.responseError(c, err) {
+		return
+	}
 }
 
 // handleCreateRoom handles the request to create a new room.
@@ -58,15 +75,14 @@ func (l *Lobby) handleJoin(c *gin.Context) {
 func (l *Lobby) handleCreateRoom(c *gin.Context) {
 	numPlayersStr := c.Query("num-players")
 	numPlayers, err := l.validateNumPlayers(numPlayersStr)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+	if l.responseError(c, err) {
 		return
 	}
 	l.mu.Lock()
 	id := l.generateRoomId()
 	room := NewRoom(numPlayers, id)
 	l.rooms[id] = room
-	room.Start()
+	go room.Start()
 	c.JSON(http.StatusOK, gin.H{"id": id})
 	l.mu.Unlock()
 }
@@ -74,6 +90,14 @@ func (l *Lobby) handleCreateRoom(c *gin.Context) {
 // ============================================================================
 // Helpers
 // ============================================================================
+
+func (l *Lobby) responseError(c *gin.Context, err error) bool {
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return true
+	}
+	return false
+}
 
 func (l *Lobby) validateNumPlayers(numPlayersStr string) (int, error) {
 	numPlayers, err := strconv.Atoi(numPlayersStr)
@@ -103,4 +127,12 @@ func (l *Lobby) generateRoomId() string {
 
 func (l *Lobby) CountRooms() int {
 	return len(l.rooms)
+}
+
+func (l *Lobby) GetRoom(roomId string) (*Room, error) {
+	_, ok := l.rooms[roomId]
+	if !ok {
+		return nil, errors.New("room not found")
+	}
+	return l.rooms[roomId], nil
 }
