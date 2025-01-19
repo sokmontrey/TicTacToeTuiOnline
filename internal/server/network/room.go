@@ -64,3 +64,7 @@ func (r *Room) onClientConnected() {
 func (r *Room) IsFull() bool {
 	return len(r.clients) >= r.numPlayers
 }
+
+func (r *Room) GetNumClients() int {
+	return len(r.clients)
+}
