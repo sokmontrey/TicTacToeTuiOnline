@@ -4,6 +4,8 @@ import (
 	"errors"
 	"github.com/gorilla/websocket"
 	"github.com/sokmontrey/TicTacToeTuiOnline/internal/server/game"
+	"github.com/sokmontrey/TicTacToeTuiOnline/pkg"
+	"log"
 	"sync"
 )
 
@@ -38,23 +40,31 @@ func (r *Room) Start() {
 func (r *Room) AddClient(conn *websocket.Conn) error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
+
 	if r.IsFull() {
 		return errors.New("room is full")
 	}
+
 	r.clients = append(r.clients, conn)
-	r.onClientConnected()
+	go r.handleClient(conn)
+
 	return nil
 }
 
-// TODO: remove client
-
-// ============================================================================
-// Event handlers
-// ============================================================================
-
-func (r *Room) onClientConnected() {
-	// TODO: check if the game is ready to start
-	// TODO: send global broadcast
+func (r *Room) handleClient(conn *websocket.Conn) {
+	defer func() {
+		conn.Close()
+		r.mu.Lock()
+		pkg.SliceRemoveByValue(r.clients, conn)
+		r.mu.Unlock()
+	}()
+	for {
+		_, msg, err := conn.ReadMessage()
+		if err != nil {
+			return
+		}
+		log.Printf("Received message from client: %s", msg)
+	}
 }
 
 // ============================================================================
