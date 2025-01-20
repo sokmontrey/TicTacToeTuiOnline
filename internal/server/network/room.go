@@ -1,6 +1,7 @@
 package network
 
 import (
+	"encoding/json"
 	"errors"
 	"github.com/gorilla/websocket"
 	"github.com/sokmontrey/TicTacToeTuiOnline/internal/server/game"
@@ -57,9 +58,32 @@ func (r *Room) HandleClient(conn *websocket.Conn) {
 	for {
 		_, msg, err := conn.ReadMessage()
 		if err != nil {
+			log.Printf("Error reading message from client: \"%s\", for room %s", err.Error(), r.id)
 			return
 		}
-		log.Printf("Received message from client: %s", string(msg))
+		var payload pkg.Payload
+		err = json.Unmarshal(msg, &payload)
+		if err != nil {
+			log.Printf("Error unmarshaling payload: \"%s\", for room %s", err.Error(), r.id)
+			return
+		}
+		r.RoutePayload(conn, payload)
+	}
+}
+
+func (r *Room) RoutePayload(conn *websocket.Conn, payload pkg.Payload) {
+	switch payload.Type {
+	case pkg.ReqKeypressPayloadType:
+		var keyCode pkg.KeyCode
+		err := json.Unmarshal(payload.Data, &keyCode)
+		if err != nil {
+			log.Printf("Error unmarshaling key code: \"%s\", for room %s", err.Error(), r.id)
+			return
+		}
+		// TODO: Handle key code
+		//log.Printf("Received payload from client: %v", keyCode == pkg.KeyCodeConfirm)
+	default:
+		log.Printf("Received unknown payload from client: %v", payload)
 	}
 }
 
