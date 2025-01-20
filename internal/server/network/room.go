@@ -39,19 +39,15 @@ func (r *Room) Start() {
 
 func (r *Room) AddClient(conn *websocket.Conn) error {
 	r.mu.Lock()
-	defer r.mu.Unlock()
-
 	if r.IsFull() {
 		return errors.New("room is full")
 	}
-
 	r.clients = append(r.clients, conn)
-	go r.handleClient(conn)
-
+	defer r.mu.Unlock()
 	return nil
 }
 
-func (r *Room) handleClient(conn *websocket.Conn) {
+func (r *Room) HandleClient(conn *websocket.Conn) {
 	defer func() {
 		conn.Close()
 		r.mu.Lock()
@@ -63,7 +59,7 @@ func (r *Room) handleClient(conn *websocket.Conn) {
 		if err != nil {
 			return
 		}
-		log.Printf("Received message from client: %s", msg)
+		log.Printf("Received message from client: %s", string(msg))
 	}
 }
 
