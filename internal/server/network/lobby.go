@@ -58,20 +58,24 @@ func (l *Lobby) handleJoin(c *gin.Context) {
 		log.Println("WebSocket upgrade error:", err)
 		return
 	}
-	defer conn.Close()
+
 	roomId := c.Query("room-id")
 	room, err := l.GetRoom(roomId)
 	if l.resWsError(conn, err) {
 		return
 	}
+
 	// also handle full room
 	err = room.AddClient(conn)
 	if l.resWsError(conn, err) {
 		return
 	}
+
 	log.Printf("A new client joined room %s", roomId)
-	msg := NewSuccessResponse("joined room " + roomId)
+	msg := pkg.NewOkResPayload("joined room " + roomId)
 	conn.WriteJSON(msg)
+
+	go room.HandleClient(conn)
 }
 
 // handleCreateRoom handles the httpRequest to create a new room.
@@ -98,7 +102,7 @@ func (l *Lobby) handleCreateRoom(c *gin.Context) {
 
 func (l *Lobby) resWsError(conn *websocket.Conn, err error) bool {
 	if err != nil {
-		msg := NewErrorResponse(err.Error())
+		msg := pkg.NewErrResPayload(err.Error())
 		conn.WriteJSON(msg)
 		conn.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseInternalServerErr, err.Error()))
 		return true

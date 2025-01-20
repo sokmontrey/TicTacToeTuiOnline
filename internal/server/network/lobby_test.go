@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/gorilla/websocket"
+	"github.com/sokmontrey/TicTacToeTuiOnline/pkg"
 	"io"
 	"net/http"
 	"testing"
@@ -30,7 +31,7 @@ func httpRequest(t *testing.T, url string, expectedStatusCode int) map[string]an
 	return got
 }
 
-func wsRequest(t *testing.T, url string) Response {
+func wsRequest(t *testing.T, url string) pkg.Payload {
 	conn, _, err := websocket.DefaultDialer.Dial(url, nil)
 	if err != nil {
 		t.Fatal(err)
@@ -41,14 +42,14 @@ func wsRequest(t *testing.T, url string) Response {
 		msgType, msg, err := conn.ReadMessage()
 		if err != nil || msgType == websocket.CloseMessage {
 			t.Log("Connection closed:", err)
-			return Response{}
+			return pkg.Payload{}
 		}
-		var res Response
+		var res pkg.Payload
 		err = json.Unmarshal(msg, &res)
 		if err != nil {
 			t.Fatal(err)
 		}
-		if res.Type == ResponseTypeError || res.Type == ResponseTypeSuccess {
+		if res.Type == pkg.ResErrPayloadType || res.Type == pkg.ResOkPayloadType {
 			return res
 		}
 	}
@@ -115,8 +116,8 @@ func TestLobby_JoinRoom(t *testing.T) {
 	roomId := got["id"].(string)
 	url = fmt.Sprintf("ws://localhost:1114/ws/join?room-id=%s", roomId)
 	res := wsRequest(t, url)
-	if res.Type != ResponseTypeSuccess && res.Data != "joined room "+roomId {
-		t.Errorf("got %v, wanted %v", res, NewSuccessResponse("joined room "+roomId))
+	if res.Type != pkg.ResOkPayloadType && res.Data != "joined room "+roomId {
+		t.Errorf("got %v, wanted %v", res, pkg.NewOkResPayload("joined room "+roomId))
 	}
 }
 
@@ -131,8 +132,8 @@ func TestLobby_JoinRoomInvalidRoomId(t *testing.T) {
 	roomId := got["id"].(string) + "INVALID"
 	url = fmt.Sprintf("ws://localhost:1114/ws/join?room-id=%s", roomId)
 	res := wsRequest(t, url)
-	if res.Type != ResponseTypeError || res.Data != "room not found" {
-		t.Errorf("got %v, wanted %v", res, NewErrorResponse("room not found"))
+	if res.Type != pkg.ResErrPayloadType || res.Data != "room not found" {
+		t.Errorf("got %v, wanted %v", res, pkg.NewErrResPayload("room not found"))
 	}
 }
 
@@ -149,7 +150,7 @@ func TestLobby_JoinRoomMaxPlayers(t *testing.T) {
 	wsRequest(t, url)
 	wsRequest(t, url)
 	res := wsRequest(t, url)
-	if res.Type != ResponseTypeError || res.Data != "room is full" {
-		t.Errorf("got %v, wanted %v", res, NewErrorResponse("room is full"))
+	if res.Type != pkg.ResErrPayloadType || res.Data != "room is full" {
+		t.Errorf("got %v, wanted %v", res, pkg.NewErrResPayload("room is full"))
 	}
 }
