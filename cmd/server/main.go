@@ -6,5 +6,5 @@ import (
 
 func main() {
 	lobby := network.NewLobby()
-	lobby.Start("8080")
+	lobby.Start("4321")
 }
