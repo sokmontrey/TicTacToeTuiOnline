@@ -18,9 +18,9 @@ func TestRoom_HandleClient(t *testing.T) {
 
 	roomId := got["id"].(string)
 	url = fmt.Sprintf("ws://localhost:%s/ws/join?room-id=%s", port, roomId)
-	pl := pkg.NewKeypressReqPayload(pkg.KeyCodeConfirm)
+	pl := pkg.NewKeypressClientPayload(pkg.KeyCodeConfirm)
 	res := WsRequestWithPayload(t, url, pl)
-	if res.Type != pkg.ResOkPayloadType {
-		t.Errorf("got %v, wanted %v", res, pkg.NewOkResPayload("joined room "+roomId))
+	if res.Type != pkg.ServerOkPayloadType {
+		t.Errorf("got %v, wanted %v", res, pkg.NewOkServerPayload("joined room "+roomId))
 	}
 }

@@ -68,8 +68,8 @@ func TestLobby_JoinRoom(t *testing.T) {
 	roomId := got["id"].(string)
 	url = fmt.Sprintf("ws://localhost:1114/ws/join?room-id=%s", roomId)
 	res := WsRequest(t, url)
-	if res.Type != pkg.ResOkPayloadType && res.Data != "joined room "+roomId {
-		t.Errorf("got %v, wanted %v", res, pkg.NewOkResPayload("joined room "+roomId))
+	if res.Type != pkg.ServerOkPayloadType && res.Data != "joined room "+roomId {
+		t.Errorf("got %v, wanted %v", res, pkg.NewOkServerPayload("joined room "+roomId))
 	}
 }
 
@@ -84,8 +84,8 @@ func TestLobby_JoinRoomInvalidRoomId(t *testing.T) {
 	roomId := got["id"].(string) + "INVALID"
 	url = fmt.Sprintf("ws://localhost:1114/ws/join?room-id=%s", roomId)
 	res := WsRequest(t, url)
-	if res.Type != pkg.ResErrPayloadType || res.Data != "room not found" {
-		t.Errorf("got %v, wanted %v", res, pkg.NewErrResPayload("room not found"))
+	if res.Type != pkg.ServerErrPayloadType || res.Data != "room not found" {
+		t.Errorf("got %v, wanted %v", res, pkg.NewErrServerPayload("room not found"))
 	}
 }
 
@@ -102,7 +102,7 @@ func TestLobby_JoinRoomMaxPlayers(t *testing.T) {
 	WsRequest(t, url)
 	WsRequest(t, url)
 	res := WsRequest(t, url)
-	if res.Type != pkg.ResErrPayloadType || res.Data != "room is full" {
-		t.Errorf("got %v, wanted %v", res, pkg.NewErrResPayload("room is full"))
+	if res.Type != pkg.ServerErrPayloadType || res.Data != "room is full" {
+		t.Errorf("got %v, wanted %v", res, pkg.NewErrServerPayload("room is full"))
 	}
 }

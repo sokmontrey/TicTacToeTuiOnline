@@ -30,7 +30,7 @@ func HttpRequest(t *testing.T, url string, expectedStatusCode int) map[string]an
 	return got
 }
 
-func WsRequest(t *testing.T, url string) pkg.ResponsePayload {
+func WsRequest(t *testing.T, url string) pkg.ServerPayload {
 	conn, _, err := websocket.DefaultDialer.Dial(url, nil)
 	if err != nil {
 		t.Fatal(err)
@@ -41,20 +41,20 @@ func WsRequest(t *testing.T, url string) pkg.ResponsePayload {
 		msgType, msg, err := conn.ReadMessage()
 		if err != nil || msgType == websocket.CloseMessage {
 			t.Log("Connection closed:", err)
-			return pkg.ResponsePayload{}
+			return pkg.ServerPayload{}
 		}
-		var res pkg.ResponsePayload
+		var res pkg.ServerPayload
 		err = json.Unmarshal(msg, &res)
 		if err != nil {
 			t.Fatal(err)
 		}
-		if res.Type == pkg.ResErrPayloadType || res.Type == pkg.ResOkPayloadType {
+		if res.Type == pkg.ServerErrPayloadType || res.Type == pkg.ServerOkPayloadType {
 			return res
 		}
 	}
 }
 
-func WsRequestWithPayload(t *testing.T, url string, payload pkg.Payload) pkg.ResponsePayload {
+func WsRequestWithPayload(t *testing.T, url string, payload pkg.Payload) pkg.ServerPayload {
 	conn, _, err := websocket.DefaultDialer.Dial(url, nil)
 	if err != nil {
 		t.Fatal(err)
@@ -66,14 +66,14 @@ func WsRequestWithPayload(t *testing.T, url string, payload pkg.Payload) pkg.Res
 		msgType, msg, err := conn.ReadMessage()
 		if err != nil || msgType == websocket.CloseMessage {
 			t.Log("Connection closed:", err)
-			return pkg.ResponsePayload{}
+			return pkg.ServerPayload{}
 		}
-		var res pkg.ResponsePayload
+		var res pkg.ServerPayload
 		err = json.Unmarshal(msg, &res)
 		if err != nil {
 			t.Fatal(err)
 		}
-		if res.Type == pkg.ResErrPayloadType || res.Type == pkg.ResOkPayloadType {
+		if res.Type == pkg.ServerErrPayloadType || res.Type == pkg.ServerOkPayloadType {
 			return res
 		}
 	}

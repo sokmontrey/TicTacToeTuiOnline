@@ -6,9 +6,9 @@ type PayloadType int
 type KeyCode byte
 
 const (
-	ResErrPayloadType PayloadType = iota
-	ResOkPayloadType
-	ReqKeypressPayloadType
+	ServerErrPayloadType PayloadType = iota
+	ServerOkPayloadType
+	ClientKeypressPayloadType
 )
 
 const (
@@ -25,31 +25,31 @@ type Payload struct {
 	Data json.RawMessage `json:"data"`
 }
 
-type ResponsePayload struct {
+type ServerPayload struct {
 	Type PayloadType `json:"type"`
 	Data any         `json:"data"`
 }
 
-func NewOkResPayload(data any) Payload {
+func NewOkServerPayload(data any) Payload {
 	rawData, _ := json.Marshal(data)
 	return Payload{
-		Type: ResOkPayloadType,
+		Type: ServerOkPayloadType,
 		Data: rawData,
 	}
 }
 
-func NewErrResPayload(data any) Payload {
+func NewErrServerPayload(data any) Payload {
 	rawData, _ := json.Marshal(data)
 	return Payload{
-		Type: ResErrPayloadType,
+		Type: ServerErrPayloadType,
 		Data: rawData,
 	}
 }
 
-func NewKeypressReqPayload(key KeyCode) Payload {
+func NewKeypressClientPayload(key KeyCode) Payload {
 	rawData, _ := json.Marshal(key)
 	return Payload{
-		Type: ReqKeypressPayloadType,
+		Type: ClientKeypressPayloadType,
 		Data: rawData,
 	}
 }

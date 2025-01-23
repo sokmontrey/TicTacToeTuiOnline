@@ -1,14 +1,23 @@
 package main
 
+import (
+	"fmt"
+	tea "github.com/charmbracelet/bubbletea"
+	"github.com/sokmontrey/TicTacToeTuiOnline/internal/client/menu"
+	"os"
+)
+
 func main() {
-	//numPlayers := 2
-	//url := fmt.Sprintf("http://localhost:4321/create-room?num-players=%d", numPlayers)
-	//res, err := http.Get(url)
-	//if err != nil {
-	//	panic(err)
+	var m = menu.NewMainMenu()
+	p := tea.NewProgram(m)
+	_, err := p.Run()
+	if err != nil {
+		fmt.Printf("Alas, there's been an error: %v", err)
+		os.Exit(1)
+	}
+	//if newModel != nil {
+	//	p = tea.NewProgram(newModel)
 	//}
-	//defer res.Body.Close()
-	//log.Println(res.Body)
 
 	//roomId := "2224"
 	//url := fmt.Sprintf("ws://localhost:4321/ws/join?room-id=%s", roomId)

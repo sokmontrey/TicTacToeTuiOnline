@@ -72,7 +72,7 @@ func (l *Lobby) handleJoin(c *gin.Context) {
 	}
 
 	log.Printf("A new client joined room %s", roomId)
-	msg := pkg.NewOkResPayload("joined room " + roomId)
+	msg := pkg.NewOkServerPayload("joined room " + roomId)
 	conn.WriteJSON(msg)
 
 	go room.HandleClient(conn)
@@ -92,7 +92,7 @@ func (l *Lobby) handleCreateRoom(c *gin.Context) {
 	l.rooms[id] = room
 	go room.Start()
 	log.Printf("Created room %s", id)
-	c.JSON(http.StatusOK, gin.H{"id": id})
+	c.JSON(http.StatusOK, pkg.NewOkServerPayload(id))
 	l.mu.Unlock()
 }
 
@@ -102,7 +102,7 @@ func (l *Lobby) handleCreateRoom(c *gin.Context) {
 
 func (l *Lobby) resWsError(conn *websocket.Conn, err error) bool {
 	if err != nil {
-		msg := pkg.NewErrResPayload(err.Error())
+		msg := pkg.NewErrServerPayload(err.Error())
 		conn.WriteJSON(msg)
 		conn.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseInternalServerErr, err.Error()))
 		return true

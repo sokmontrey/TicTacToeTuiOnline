@@ -18,9 +18,9 @@ type GlobalBroadcastState struct {
 
 type Room struct {
 	id              string
-	numPlayers      int
+	maxPlayers      int
 	game            *game.Game
-	clients         []*websocket.Conn
+	clients         map[*websocket.Conn]game.PlayerId
 	globalBroadcast chan GlobalBroadcastState
 	mu              sync.Mutex
 }
@@ -28,9 +28,9 @@ type Room struct {
 func NewRoom(numPlayers int, id string) *Room {
 	return &Room{
 		id:              id,
-		numPlayers:      numPlayers,
+		maxPlayers:      numPlayers,
 		game:            nil, // TODO: NewGame(),
-		clients:         make([]*websocket.Conn, 0, numPlayers),
+		clients:         make(map[*websocket.Conn]game.PlayerId),
 		globalBroadcast: make(chan GlobalBroadcastState),
 	}
 }
@@ -43,7 +43,7 @@ func (r *Room) AddClient(conn *websocket.Conn) error {
 	if r.IsFull() {
 		return errors.New("room is full")
 	}
-	r.clients = append(r.clients, conn)
+	r.clients[conn] = game.PlayerId(len(r.clients) + 1)
 	defer r.mu.Unlock()
 	return nil
 }
@@ -52,7 +52,8 @@ func (r *Room) HandleClient(conn *websocket.Conn) {
 	defer func() {
 		conn.Close()
 		r.mu.Lock()
-		pkg.SliceRemoveByValue(r.clients, conn)
+		delete(r.clients, conn)
+		// TODO: Broadcast player left, stall the game
 		r.mu.Unlock()
 	}()
 	for {
@@ -67,24 +68,27 @@ func (r *Room) HandleClient(conn *websocket.Conn) {
 			log.Printf("Error unmarshaling payload: \"%s\", for room %s", err.Error(), r.id)
 			return
 		}
-		r.RoutePayload(conn, payload)
+		if r.RoutePayload(conn, payload) {
+			return
+		}
 	}
 }
 
-func (r *Room) RoutePayload(conn *websocket.Conn, payload pkg.Payload) {
+func (r *Room) RoutePayload(conn *websocket.Conn, payload pkg.Payload) bool {
 	switch payload.Type {
-	case pkg.ReqKeypressPayloadType:
+	case pkg.ClientKeypressPayloadType:
 		var keyCode pkg.KeyCode
 		err := json.Unmarshal(payload.Data, &keyCode)
 		if err != nil {
 			log.Printf("Error unmarshaling key code: \"%s\", for room %s", err.Error(), r.id)
-			return
+			return true
 		}
 		// TODO: Handle key code
 		//log.Printf("Received payload from client: %v", keyCode == pkg.KeyCodeConfirm)
 	default:
 		log.Printf("Received unknown payload from client: %v", payload)
 	}
+	return false
 }
 
 // ============================================================================
@@ -92,7 +96,7 @@ func (r *Room) RoutePayload(conn *websocket.Conn, payload pkg.Payload) {
 // ============================================================================
 
 func (r *Room) IsFull() bool {
-	return len(r.clients) >= r.numPlayers
+	return len(r.clients) >= r.maxPlayers
 }
 
 func (r *Room) GetNumClients() int {
