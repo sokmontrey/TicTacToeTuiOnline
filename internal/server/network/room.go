@@ -4,23 +4,23 @@ import (
 	"encoding/json"
 	"errors"
 	"github.com/gorilla/websocket"
-	"github.com/sokmontrey/TicTacToeTuiOnline/internal/server/game"
+	"github.com/sokmontrey/TicTacToeTuiOnline/internal/server/serverGame"
 	"github.com/sokmontrey/TicTacToeTuiOnline/pkg"
 	"log"
 	"sync"
 )
 
 type GlobalBroadcastState struct {
-	Cells        []game.Cell   `json:"cells"`
-	PlayerId     game.PlayerId `json:"player-id"`
-	IsTerminated bool          `json:"is-terminated"`
+	Cells        []serverGame.Cell   `json:"cells"`
+	PlayerId     serverGame.PlayerId `json:"player-id"`
+	IsTerminated bool                `json:"is-terminated"`
 }
 
 type Room struct {
 	id              string
 	maxPlayers      int
-	game            *game.Game
-	clients         map[*websocket.Conn]game.PlayerId
+	game            *serverGame.Game
+	clients         map[*websocket.Conn]serverGame.PlayerId
 	globalBroadcast chan GlobalBroadcastState
 	mu              sync.Mutex
 }
@@ -30,7 +30,7 @@ func NewRoom(numPlayers int, id string) *Room {
 		id:              id,
 		maxPlayers:      numPlayers,
 		game:            nil, // TODO: NewGame(),
-		clients:         make(map[*websocket.Conn]game.PlayerId),
+		clients:         make(map[*websocket.Conn]serverGame.PlayerId),
 		globalBroadcast: make(chan GlobalBroadcastState),
 	}
 }
@@ -43,7 +43,7 @@ func (r *Room) AddClient(conn *websocket.Conn) error {
 	if r.IsFull() {
 		return errors.New("room is full")
 	}
-	r.clients[conn] = game.PlayerId(len(r.clients) + 1)
+	r.clients[conn] = serverGame.PlayerId(len(r.clients) + 1)
 	defer r.mu.Unlock()
 	return nil
 }
@@ -53,7 +53,7 @@ func (r *Room) HandleClient(conn *websocket.Conn) {
 		conn.Close()
 		r.mu.Lock()
 		delete(r.clients, conn)
-		// TODO: Broadcast player left, stall the game
+		// TODO: Broadcast player left, stall the clientGame
 		r.mu.Unlock()
 	}()
 	for {

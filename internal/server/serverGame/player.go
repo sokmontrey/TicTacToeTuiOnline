@@ -1,4 +1,4 @@
-package game
+package serverGame
 
 import (
 	"github.com/sokmontrey/TicTacToeTuiOnline/pkg"
