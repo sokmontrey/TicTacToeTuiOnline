@@ -1,20 +1,16 @@
 package main
 
 import (
-	"fmt"
-	tea "github.com/charmbracelet/bubbletea"
 	"github.com/sokmontrey/TicTacToeTuiOnline/internal/client/page"
+	"log"
 )
 
 func main() {
 	pageManager := page.NewPageManager()
 	pageManager.ToMainMenu()
-	p := tea.NewProgram(pageManager)
-	if _, err := p.Run(); err != nil {
-		fmt.Println("There has been an error: ", err)
-		fmt.Println("Exiting...")
-		return
-	}
+	log.Println("Starting the program...")
+	pageManager.Init()
+	pageManager.Run()
 
 	//if err := keyboard.Open(); err != nil {
 	//	panic(err)
