@@ -7,8 +7,9 @@ import (
 )
 
 func main() {
-	mainMenu := page.NewMainMenu()
-	p := tea.NewProgram(page.NewPageManager(mainMenu))
+	pageManager := page.NewPageManager()
+	pageManager.ToMainMenu()
+	p := tea.NewProgram(pageManager)
 	if _, err := p.Run(); err != nil {
 		fmt.Println("There has been an error: ", err)
 		fmt.Println("Exiting...")
