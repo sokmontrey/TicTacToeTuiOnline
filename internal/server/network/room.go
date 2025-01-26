@@ -84,7 +84,7 @@ func (r *Room) RoutePayload(conn *websocket.Conn, payload pkg.Payload) bool {
 			return true
 		}
 		// TODO: Handle key code
-		//log.Printf("Received payload from client: %v", keyCode == pkg.KeyCodeConfirm)
+		log.Printf("Received payload from client: %v", keyCode)
 	default:
 		log.Printf("Received unknown payload from client: %v", payload)
 	}

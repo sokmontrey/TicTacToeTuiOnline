@@ -1,6 +1,9 @@
 package pkg
 
-import "encoding/json"
+import (
+	"encoding/json"
+	"github.com/eiannone/keyboard"
+)
 
 type PayloadType int
 type KeyCode byte
@@ -18,6 +21,7 @@ const (
 	KeyCodeDown
 	KeyCodeLeft
 	KeyCodeRight
+	KeyCodeNone
 )
 
 type Payload struct {
@@ -28,6 +32,11 @@ type Payload struct {
 type ServerPayload struct {
 	Type PayloadType `json:"type"`
 	Data any         `json:"data"`
+}
+
+type ClientPayload struct {
+	Type PayloadType `json:"type"`
+	Data KeyCode     `json:"data"`
 }
 
 func NewOkServerPayload(data any) Payload {
@@ -44,6 +53,38 @@ func NewErrServerPayload(data any) Payload {
 		Type: ServerErrPayloadType,
 		Data: rawData,
 	}
+}
+
+func CharToKeyCode(char rune) KeyCode {
+	switch char {
+	case 'w':
+		return KeyCodeUp
+	case 's':
+		return KeyCodeDown
+	case 'a':
+		return KeyCodeLeft
+	case 'd':
+		return KeyCodeRight
+	case ' ':
+		return KeyCodeConfirm
+	}
+	return KeyCodeNone
+}
+
+func KeyPressToKeyCode(key keyboard.Key) KeyCode {
+	switch key {
+	case keyboard.KeyArrowUp:
+		return KeyCodeUp
+	case keyboard.KeyArrowDown:
+		return KeyCodeDown
+	case keyboard.KeyArrowLeft:
+		return KeyCodeLeft
+	case keyboard.KeyArrowRight:
+		return KeyCodeRight
+	case keyboard.KeyEnter, keyboard.KeySpace:
+		return KeyCodeConfirm
+	}
+	return KeyCodeNone
 }
 
 func NewKeypressClientPayload(key KeyCode) Payload {

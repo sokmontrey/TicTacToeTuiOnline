@@ -49,6 +49,8 @@ func (pm *PageManager) Run() {
 			switch pageCmd {
 			case ProgramQuit:
 				return
+			default:
+				continue
 			}
 		}
 	}
@@ -61,8 +63,9 @@ func (pm *PageManager) ToMainMenu() {
 }
 
 func (pm *PageManager) ToGameRoom(roomId string) {
-	//pm.currentPage = NewGamePage(pm, roomId)
-	//pm.currentPage.Init()
+	tm.Clear()
+	pm.currentPage = NewGameRoom(pm, roomId)
+	pm.currentPage.Init()
 }
 
 func (pm *PageManager) ToCreateRoomForm() {
