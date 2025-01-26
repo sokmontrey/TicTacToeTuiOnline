@@ -1,11 +1,18 @@
 package main
 
-import "github.com/sokmontrey/TicTacToeTuiOnline/internal/client/page"
+import (
+	"fmt"
+	tea "github.com/charmbracelet/bubbletea"
+	"github.com/sokmontrey/TicTacToeTuiOnline/internal/client/page"
+)
 
 func main() {
-	var currentPage page.Page = page.NewMainMenu()
-	for currentPage != nil {
-		currentPage = currentPage.Run()
+	mainMenu := page.NewMainMenu()
+	p := tea.NewProgram(page.NewPageManager(mainMenu))
+	if _, err := p.Run(); err != nil {
+		fmt.Println("There has been an error: ", err)
+		fmt.Println("Exiting...")
+		return
 	}
 
 	//if err := keyboard.Open(); err != nil {

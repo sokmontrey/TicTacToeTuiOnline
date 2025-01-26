@@ -12,28 +12,17 @@ import (
 type CreateRoomForm struct {
 	numPlayers int
 	msg        string
+	minPlayers int
+	maxPlayers int
 }
 
 func NewCreateRoomForm() CreateRoomForm {
 	return CreateRoomForm{
 		numPlayers: 2,
 		msg:        "",
+		minPlayers: 2,
+		maxPlayers: 4,
 	}
-}
-
-func (m CreateRoomForm) Run() Page {
-	p := tea.NewProgram(m)
-	finalModel, _ := p.Run()
-	if finalModel == nil {
-		return nil
-	}
-	form := finalModel.(CreateRoomForm)
-	roomId, err := requestCreateRoom(form.numPlayers)
-	if err != nil || roomId == "" {
-		fmt.Println("Error: ", err)
-		return NewCreateRoomForm()
-	}
-	return NewGamePage(roomId)
 }
 
 func (m CreateRoomForm) Init() tea.Cmd {
@@ -46,25 +35,49 @@ func (m CreateRoomForm) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
 		switch msg.String() {
-		case "esc", "ctrl+c", "q":
+		case "ctrl+c", "q":
 			return nil, tea.Quit
+		case "esc":
+			return m.getPreviousPage(), nil
 		case "enter", "tab", " ":
-			return m, tea.Quit
+			return m.getNextPage(), nil
 		case "up", "w", "d", "right":
-			if m.numPlayers < 4 {
-				m.numPlayers++
-			}
+			m.numPlayers = m.increaseNumPlayers()
 		case "down", "s", "a", "left":
-			if m.numPlayers > 2 {
-				m.numPlayers--
-			}
+			m.numPlayers = m.decreaseNumPlayers()
 		}
 	case error:
 		m.msg = "Error: " + msg.Error()
 		return m, nil
 	}
-
 	return m, nil
+}
+
+func (m CreateRoomForm) getNextPage() tea.Model {
+	roomId, err := requestCreateRoom(m.numPlayers)
+	if err != nil || roomId == "" {
+		m.msg = "Error: " + err.Error()
+		return m
+	}
+	return NewGamePage(roomId)
+}
+
+func (m CreateRoomForm) getPreviousPage() tea.Model {
+	return NewMainMenu()
+}
+
+func (m CreateRoomForm) increaseNumPlayers() int {
+	if m.numPlayers < m.maxPlayers {
+		return m.numPlayers + 1
+	}
+	return m.numPlayers
+}
+
+func (m CreateRoomForm) decreaseNumPlayers() int {
+	if m.numPlayers > m.minPlayers {
+		return m.numPlayers - 1
+	}
+	return m.numPlayers
 }
 
 func (m CreateRoomForm) View() string {

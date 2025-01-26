@@ -28,22 +28,6 @@ func NewMainMenu() MainMenu {
 	}
 }
 
-func (m MainMenu) Run() Page {
-	p := tea.NewProgram(m)
-	finalModel, _ := p.Run()
-	if finalModel == nil {
-		return nil
-	}
-	finalMainMenu := finalModel.(MainMenu)
-	switch finalMainMenu.options[finalMainMenu.cursor] {
-	case CreateRoomOption:
-		return NewCreateRoomForm()
-	case JoinRoomOption:
-		//return NewJoinRoomMenu()
-	}
-	return nil
-}
-
 func (m MainMenu) Init() tea.Cmd {
 	return nil
 }
@@ -56,25 +40,35 @@ func (m MainMenu) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "ctrl+c", "q":
 			return nil, tea.Quit
 		case "up", "w":
-			if m.cursor > 0 {
-				m.cursor--
-			} else {
-				m.cursor = len(m.options) - 1
-			}
+			m.cursor = m.MoveCursorUp()
 		case "down", "s":
-			if m.cursor < len(m.options)-1 {
-				m.cursor++
-			} else {
-				m.cursor = 0
-			}
+			m.cursor = m.MoveCursorDown()
 		case "enter", " ":
-			return m, tea.Quit
+			return m.getNextPage(), nil
 		}
 	case error:
 		m.msg = "Error: " + msg.Error()
 		return m, nil
 	}
 	return m, nil
+}
+
+func (m MainMenu) MoveCursorDown() int {
+	return (m.cursor + 1) % len(m.options)
+}
+
+func (m MainMenu) MoveCursorUp() int {
+	return (m.cursor - 1 + len(m.options)) % len(m.options)
+}
+
+func (m MainMenu) getNextPage() tea.Model {
+	switch m.options[m.cursor] {
+	case CreateRoomOption:
+		return NewCreateRoomForm()
+	case JoinRoomOption:
+		return NewJoinRoomForm()
+	}
+	return m
 }
 
 func (m MainMenu) View() string {
