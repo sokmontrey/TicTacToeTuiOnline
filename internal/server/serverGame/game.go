@@ -10,5 +10,5 @@ type Cell struct {
 type Game struct {
 	players           map[PlayerId]player
 	currentPlayerTurn PlayerId
-	board             board
+	board             Board
 }
