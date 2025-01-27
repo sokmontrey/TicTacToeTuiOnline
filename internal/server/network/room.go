@@ -36,13 +36,13 @@ func (r *Room) listenForClientsMove() {
 			str := fmt.Sprintf("Player %d moved with %v", move.clientId, move.moveCode)
 			payload := pkg.NewPayload(pkg.ServerOkPayload, str)
 			r.mu.Lock()
-			r.Broadcast(payload)
+			r.broadcast(payload)
 			r.mu.Unlock()
 		}
 	}
 }
 
-func (r *Room) Broadcast(payload pkg.Payload) {
+func (r *Room) broadcast(payload pkg.Payload) {
 	for _, client := range r.clients {
 		err := payload.WsSend(client.conn)
 		if err != nil {
@@ -63,7 +63,7 @@ func (r *Room) AddClient(conn *websocket.Conn) error {
 	client.Run()
 	str := fmt.Sprintf("Player %d joined the room", clientId)
 	payload := pkg.NewPayload(pkg.ServerOkPayload, str)
-	r.Broadcast(payload)
+	r.broadcast(payload)
 	return nil
 }
 
@@ -73,7 +73,7 @@ func (r *Room) RemoveClient(clientId int) {
 	delete(r.clients, clientId)
 	str := fmt.Sprintf("Player %d left the room", clientId)
 	payload := pkg.NewPayload(pkg.ServerOkPayload, str)
-	r.Broadcast(payload)
+	r.broadcast(payload)
 }
 
 // ============================================================================
