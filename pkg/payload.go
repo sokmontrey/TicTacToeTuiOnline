@@ -11,10 +11,18 @@ type PayloadType byte
 
 type MoveCode byte
 
+type PositionUpdate struct {
+	PlayerId int  `json:"playerId"`
+	Position Vec2 `json:"position"`
+}
+
 const (
 	ServerErrPayload PayloadType = iota
 	ServerOkPayload
+	ServerPositionPayload
+	//ServerBoardUpdatePayload
 	ClientMovePayload
+	NonePayload
 )
 
 const (
@@ -46,6 +54,14 @@ func NewPayload(payloadType PayloadType, data any) Payload {
 		Type: payloadType,
 		Data: rawData,
 	}
+}
+
+func NewNonePayload() Payload {
+	return NewPayload(NonePayload, nil)
+}
+
+func NewPositionUpdatePayload(playerId int, position Vec2) Payload {
+	return NewPayload(ServerPositionPayload, PositionUpdate{playerId, position})
 }
 
 func CharToMoveCode(char rune) MoveCode {

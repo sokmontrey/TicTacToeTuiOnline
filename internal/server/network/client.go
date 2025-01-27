@@ -7,7 +7,7 @@ import (
 	"log"
 )
 
-type clientMove struct {
+type ClientMove struct {
 	clientId int
 	moveCode pkg.MoveCode
 }
@@ -64,8 +64,15 @@ func (c *Client) routePayload(payload pkg.Payload) bool {
 			return true
 		}
 		if moveCode != pkg.MoveCodeNone {
-			c.room.move <- clientMove{c.clientId, moveCode}
+			c.room.move <- ClientMove{c.clientId, moveCode}
 		}
 	}
 	return false
+}
+
+func (c *Client) SendWs(payload pkg.Payload) {
+	err := payload.WsSend(c.conn)
+	if err != nil {
+		log.Printf("Error sending payload to client %d: %v", c.clientId, err)
+	}
 }

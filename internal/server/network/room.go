@@ -4,8 +4,8 @@ import (
 	"errors"
 	"fmt"
 	"github.com/gorilla/websocket"
+	"github.com/sokmontrey/TicTacToeTuiOnline/internal/server/serverGame"
 	"github.com/sokmontrey/TicTacToeTuiOnline/pkg"
-	"log"
 	"sync"
 )
 
@@ -14,7 +14,8 @@ type Room struct {
 	maxPlayers int
 	clients    map[int]*Client
 	mu         sync.Mutex
-	move       chan clientMove
+	move       chan ClientMove
+	game       *serverGame.Game
 }
 
 func NewRoom(numPlayers int, id string) *Room {
@@ -22,7 +23,8 @@ func NewRoom(numPlayers int, id string) *Room {
 		id:         id,
 		maxPlayers: numPlayers,
 		clients:    make(map[int]*Client),
-		move:       make(chan clientMove, 10),
+		move:       make(chan ClientMove, 10),
+		game:       serverGame.NewGame(numPlayers),
 	}
 }
 
@@ -33,21 +35,26 @@ func (r *Room) Start() {
 func (r *Room) listenForClientsMove() {
 	for {
 		for move := range r.move {
-			str := fmt.Sprintf("Player %d moved with %v", move.clientId, move.moveCode)
-			payload := pkg.NewPayload(pkg.ServerOkPayload, str)
 			r.mu.Lock()
-			r.broadcast(payload)
+			globalPayload, directPayload := r.game.UpdateState(move.clientId, move.moveCode)
+			if globalPayload.Type != pkg.NonePayload {
+				r.globalBroadcast(globalPayload)
+			}
+			if directPayload.Type != pkg.NonePayload {
+				r.directBroadcast(move.clientId, directPayload)
+			}
 			r.mu.Unlock()
 		}
 	}
 }
 
-func (r *Room) broadcast(payload pkg.Payload) {
+func (r *Room) directBroadcast(clientId int, payload pkg.Payload) {
+	r.clients[clientId].SendWs(payload)
+}
+
+func (r *Room) globalBroadcast(payload pkg.Payload) {
 	for _, client := range r.clients {
-		err := payload.WsSend(client.conn)
-		if err != nil {
-			log.Printf("Error sending payload to client %d: %v", client.clientId, err)
-		}
+		client.SendWs(payload)
 	}
 }
 
@@ -57,14 +64,18 @@ func (r *Room) AddClient(conn *websocket.Conn) error {
 	if r.IsFull() {
 		return errors.New("room is full")
 	}
+	clientId := r.CreateClient(conn)
+	payload := pkg.NewPayload(pkg.ServerOkPayload, fmt.Sprintf("Player %d joined the room", clientId))
+	r.globalBroadcast(payload)
+	return nil
+}
+
+func (r *Room) CreateClient(conn *websocket.Conn) int {
 	clientId := len(r.clients) + 1
 	client := NewClient(clientId, conn, r)
 	r.clients[clientId] = client
 	client.Run()
-	str := fmt.Sprintf("Player %d joined the room", clientId)
-	payload := pkg.NewPayload(pkg.ServerOkPayload, str)
-	r.broadcast(payload)
-	return nil
+	return clientId
 }
 
 func (r *Room) RemoveClient(clientId int) {
@@ -73,7 +84,7 @@ func (r *Room) RemoveClient(clientId int) {
 	delete(r.clients, clientId)
 	str := fmt.Sprintf("Player %d left the room", clientId)
 	payload := pkg.NewPayload(pkg.ServerOkPayload, str)
-	r.broadcast(payload)
+	r.globalBroadcast(payload)
 }
 
 // ============================================================================
