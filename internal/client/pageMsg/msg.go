@@ -13,9 +13,9 @@ type KeyMsg struct {
 }
 
 func (k KeyMsg) ToMoveCode() pkg.MoveCode {
-	moveCode := pkg.CharToMoveCode(k.Char)
+	moveCode := pkg.KeyToMoveCode(k.Key)
 	if moveCode == pkg.MoveCodeNone {
-		moveCode = pkg.KeyToMoveCode(k.Key)
+		moveCode = pkg.CharToMoveCode(k.Char)
 	}
 	return moveCode
 }

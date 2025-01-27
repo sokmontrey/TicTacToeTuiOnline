@@ -54,6 +54,7 @@ func CharToMoveCode(char rune) MoveCode {
 		's': MoveCodeDown,
 		'a': MoveCodeLeft,
 		'd': MoveCodeRight,
+		' ': MoveCodeConfirm,
 	}
 	moveCode, ok := mapCharToMoveCode[char]
 	if ok {
@@ -68,6 +69,8 @@ func KeyToMoveCode(key keyboard.Key) MoveCode {
 		keyboard.KeyArrowDown:  MoveCodeDown,
 		keyboard.KeyArrowLeft:  MoveCodeLeft,
 		keyboard.KeyArrowRight: MoveCodeRight,
+		keyboard.KeyEnter:      MoveCodeConfirm,
+		keyboard.KeySpace:      MoveCodeConfirm,
 	}
 	moveCode, ok := mapKeyToMoveCode[key]
 	if ok {
