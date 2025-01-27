@@ -3,6 +3,7 @@ package page
 import (
 	"fmt"
 	"github.com/eiannone/keyboard"
+	"github.com/sokmontrey/TicTacToeTuiOnline/internal/client/pageMsg"
 )
 
 type JoinRoomForm struct {
@@ -24,13 +25,13 @@ func NewJoinRoomForm(pm *PageManager) *JoinRoomForm {
 func (m *JoinRoomForm) Init() {
 }
 
-func (m *JoinRoomForm) Update(msg PageMsg) PageCmd {
+func (m *JoinRoomForm) Update(msg pageMsg.PageMsg) Command {
 	m.msg = ""
 	switch msg := msg.(type) {
-	case KeyMsg:
+	case pageMsg.KeyMsg:
 		switch msg.Key {
 		case keyboard.KeyEsc, keyboard.KeyCtrlC:
-			return ProgramQuit
+			return QuitCommand
 		case keyboard.KeyBackspace:
 			m.deleteChar()
 		case keyboard.KeyEnter:
@@ -39,13 +40,12 @@ func (m *JoinRoomForm) Update(msg PageMsg) PageCmd {
 			} else {
 				m.pageManager.ToGameRoom(m.roomId)
 			}
-			return NoneCmd
 		}
 		if msg.Char >= '0' && msg.Char <= '9' {
 			m.writeChar(msg.Char)
 		}
 	}
-	return NoneCmd
+	return NoneCommand
 }
 
 func (m *JoinRoomForm) writeChar(char rune) {

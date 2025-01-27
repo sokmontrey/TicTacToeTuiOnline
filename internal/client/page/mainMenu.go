@@ -3,6 +3,7 @@ package page
 import (
 	"fmt"
 	"github.com/eiannone/keyboard"
+	"github.com/sokmontrey/TicTacToeTuiOnline/internal/client/pageMsg"
 )
 
 type MenuOption struct {
@@ -30,22 +31,18 @@ func NewMainMenu(pm *PageManager) *MainMenu {
 func (m *MainMenu) Init() {
 }
 
-func (m *MainMenu) Update(msg PageMsg) PageCmd {
+func (m *MainMenu) Update(msg pageMsg.PageMsg) Command {
 	switch msg := msg.(type) {
-	case KeyMsg:
+	case pageMsg.KeyMsg:
 		switch msg.Key {
 		case keyboard.KeyEsc, keyboard.KeyCtrlC:
-			return ProgramQuit
+			return QuitCommand
 		case keyboard.KeyEnter, keyboard.KeySpace:
 			m.options[m.cursor].Action()
 		case keyboard.KeyArrowUp:
 			m.moveCursor(1)
 		case keyboard.KeyArrowDown:
 			m.moveCursor(-1)
-		}
-
-		if !msg.IsChar() {
-			return NoneCmd
 		}
 
 		switch msg.Char {
@@ -55,7 +52,7 @@ func (m *MainMenu) Update(msg PageMsg) PageCmd {
 			m.moveCursor(-1)
 		}
 	}
-	return NoneCmd
+	return NoneCommand
 }
 
 func (m *MainMenu) moveCursor(delta int) {

@@ -7,6 +7,7 @@ import (
 	"github.com/gorilla/websocket"
 	"github.com/sokmontrey/TicTacToeTuiOnline/pkg"
 	"log"
+	"math/rand"
 	"net/http"
 	"os"
 	"strconv"
@@ -61,21 +62,19 @@ func (l *Lobby) handleJoin(c *gin.Context) {
 
 	roomId := c.Query("room-id")
 	room, err := l.GetRoom(roomId)
-	if l.resWsError(conn, err) {
+	stop := l.resWsError(conn, err)
+	if stop {
 		return
 	}
 
 	// also handle full room
 	err = room.AddClient(conn)
-	if l.resWsError(conn, err) {
+	stop = l.resWsError(conn, err)
+	if stop {
 		return
 	}
 
 	log.Printf("A new client joined room %s", roomId)
-	msg := pkg.NewOkServerPayload("joined room " + roomId)
-	conn.WriteJSON(msg)
-
-	go room.HandleClient(conn)
 }
 
 // handleCreateRoom handles the httpRequest to create a new room.
@@ -92,7 +91,8 @@ func (l *Lobby) handleCreateRoom(c *gin.Context) {
 	l.rooms[id] = room
 	go room.Start()
 	log.Printf("Created room %s", id)
-	c.JSON(http.StatusOK, pkg.NewOkServerPayload(id))
+	payload := pkg.NewPayload(pkg.ServerOkPayload, id)
+	payload.HttpSend(http.StatusOK, c)
 	l.mu.Unlock()
 }
 
@@ -102,8 +102,8 @@ func (l *Lobby) handleCreateRoom(c *gin.Context) {
 
 func (l *Lobby) resWsError(conn *websocket.Conn, err error) bool {
 	if err != nil {
-		msg := pkg.NewErrServerPayload(err.Error())
-		conn.WriteJSON(msg)
+		payload := pkg.NewPayload(pkg.ServerErrPayload, err.Error())
+		payload.WsSend(conn)
 		conn.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseInternalServerErr, err.Error()))
 		return true
 	}
@@ -112,7 +112,8 @@ func (l *Lobby) resWsError(conn *websocket.Conn, err error) bool {
 
 func (l *Lobby) resHttpError(c *gin.Context, err error) bool {
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		payload := pkg.NewPayload(pkg.ServerErrPayload, err.Error())
+		payload.HttpSend(http.StatusBadRequest, c)
 		return true
 	}
 	return false
@@ -131,10 +132,13 @@ func (l *Lobby) validateNumPlayers(numPlayersStr string) (int, error) {
 
 func (l *Lobby) generateRoomId() string {
 	// TODO: Use a better algorithm for generating room ids with less collisions
-	id := pkg.GenerateId(NumIdDigits)
-	_, ok := l.rooms[id]
+	var id string
+	ok := true
 	for ok {
-		id = pkg.GenerateId(NumIdDigits)
+		id = ""
+		for i := 0; i < NumIdDigits; i++ {
+			id += strconv.Itoa(rand.Intn(10))
+		}
 		_, ok = l.rooms[id]
 	}
 	return id

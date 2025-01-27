@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/eiannone/keyboard"
 	"github.com/gorilla/websocket"
+	"github.com/sokmontrey/TicTacToeTuiOnline/internal/client/pageMsg"
 	"github.com/sokmontrey/TicTacToeTuiOnline/pkg"
 )
 
@@ -30,32 +31,26 @@ func (m *GameRoom) Init() {
 	go m.listenForMoves()
 }
 
-func (m *GameRoom) Update(msg PageMsg) PageCmd {
+func (m *GameRoom) Update(msg pageMsg.PageMsg) Command {
 	m.msg = ""
 	switch msg := msg.(type) {
-	case OkMsg:
+	case pageMsg.OkMsg:
 		m.msg = msg.Data.(string)
-	case ErrMsg:
+	case pageMsg.ErrMsg:
 		m.msg = "Error: " + msg.Data.(string)
-		return ProgramQuit // TODO: handle reconnection
-	case KeyMsg:
-		var move pkg.KeyCode
+		return QuitCommand // TODO: handle reconnection
+	case pageMsg.KeyMsg:
 		switch msg.Key {
 		case keyboard.KeyEsc, keyboard.KeyCtrlC:
-			return ProgramQuit
+			return QuitCommand
 		}
-		move = pkg.KeyPressToKeyCode(msg.Key)
-		if move != pkg.KeyCodeNone {
-			m.moveChan <- pkg.NewKeypressClientPayload(move)
-			return NoneCmd
+		moveCode := msg.ToMoveCode()
+		if moveCode != pkg.MoveCodeNone {
+			m.moveChan <- pkg.NewPayload(pkg.ClientMovePayload, moveCode)
 		}
-		move = pkg.CharToKeyCode(msg.Char)
-		if move != pkg.KeyCodeNone {
-			m.moveChan <- pkg.NewKeypressClientPayload(move)
-			return NoneCmd
-		}
+		return NoneCommand
 	}
-	return NoneCmd
+	return NoneCommand
 }
 
 func (m *GameRoom) View() string {
@@ -70,7 +65,7 @@ func (m *GameRoom) listenForMoves() {
 		select {
 		case msg := <-m.moveChan:
 			if err := m.conn.WriteJSON(msg); err != nil {
-				m.pageManager.msg <- ErrMsg{"Unable to send message to the server"}
+				m.pageManager.msg <- pageMsg.NewErrMsg("Unable to send message to the server")
 				return
 			}
 		}
@@ -82,7 +77,7 @@ func (m *GameRoom) connectAndListenToServer() {
 	url := fmt.Sprintf("ws://localhost:%s/ws/join?room-id=%s", port, m.roomId)
 	conn, _, err := websocket.DefaultDialer.Dial(url, nil)
 	if err != nil {
-		m.pageManager.msg <- ErrMsg{"Unable to connect to the server. Try again later"}
+		m.pageManager.msg <- pageMsg.NewErrMsg("Unable to connect to the server. Try again later")
 		// TODO: handle reconnection
 		return
 	}
@@ -91,16 +86,20 @@ func (m *GameRoom) connectAndListenToServer() {
 	for {
 		msgType, msg, err := conn.ReadMessage()
 		if err != nil || msgType == websocket.CloseMessage {
-			m.pageManager.msg <- ErrMsg{"Connection closed"}
+			m.pageManager.msg <- pageMsg.NewErrMsg("Connection closed")
 			return
 		}
-		var payload pkg.ServerPayload
-		if err := json.Unmarshal(msg, &payload); err != nil {
-			m.pageManager.msg <- ErrMsg{"Unable to parse server response"}
-		} else if payload.Type == pkg.ServerErrPayloadType {
-			m.pageManager.msg <- ErrMsg{payload.Data.(string)}
-		} else if payload.Type == pkg.ServerOkPayloadType {
-			m.pageManager.msg <- OkMsg{payload.Data.(string)}
+		var payload pkg.Payload
+		err = json.Unmarshal(msg, &payload)
+		if err != nil {
+			m.pageManager.msg <- pageMsg.NewErrMsg("Unable to parse server response")
+		}
+		var msgStr string
+		json.Unmarshal(payload.Data, &msgStr)
+		if payload.Type == pkg.ServerErrPayload {
+			m.pageManager.msg <- pageMsg.NewErrMsg(msgStr)
+		} else if payload.Type == pkg.ServerOkPayload {
+			m.pageManager.msg <- pageMsg.NewOkMsg(msgStr)
 		} // TODO: Game update payload
 	}
 }
