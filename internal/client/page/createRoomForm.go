@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/eiannone/keyboard"
+	"github.com/sokmontrey/TicTacToeTuiOnline/internal/client/pageMsg"
 	"github.com/sokmontrey/TicTacToeTuiOnline/pkg"
 	"net/http"
 )
@@ -30,16 +31,15 @@ func NewCreateRoomForm(pm *PageManager) *CreateRoomForm {
 func (m *CreateRoomForm) Init() {
 }
 
-func (m *CreateRoomForm) Update(msg PageMsg) PageCmd {
+func (m *CreateRoomForm) Update(msg pageMsg.PageMsg) Command {
 	m.msg = ""
 	switch msg := msg.(type) {
-	case KeyMsg:
+	case pageMsg.KeyMsg:
 		switch msg.Key {
+		case keyboard.KeyCtrlC:
+			return QuitCommand
 		case keyboard.KeyEsc:
 			m.pageManager.ToMainMenu()
-			return NoneCmd
-		case keyboard.KeyCtrlC:
-			return ProgramQuit
 		case keyboard.KeyArrowUp, keyboard.KeyArrowRight:
 			m.updateNumPlayers(1)
 		case keyboard.KeyArrowDown, keyboard.KeyArrowLeft:
@@ -51,11 +51,7 @@ func (m *CreateRoomForm) Update(msg PageMsg) PageCmd {
 			} else {
 				m.pageManager.ToGameRoom(roomId)
 			}
-			return NoneCmd
-		}
-
-		if !msg.IsChar() {
-			return NoneCmd
+			return NoneCommand
 		}
 
 		switch msg.Char {
@@ -65,7 +61,7 @@ func (m *CreateRoomForm) Update(msg PageMsg) PageCmd {
 			m.updateNumPlayers(-1)
 		}
 	}
-	return NoneCmd
+	return NoneCommand
 }
 
 func (m *CreateRoomForm) updateNumPlayers(delta int) {
@@ -85,14 +81,16 @@ func (m *CreateRoomForm) requestCreateRoom() (string, error) {
 		return "", errors.New("unable to connect to the server. Try again later")
 	}
 	defer res.Body.Close()
-	var payload pkg.ServerPayload
+	var payload pkg.Payload
 	if res.StatusCode == http.StatusOK {
 		err = json.NewDecoder(res.Body).Decode(&payload)
 	}
-	if err != nil || payload.Type != pkg.ServerOkPayloadType {
+	if err != nil {
 		return "", errors.New("unable to connect to the server. Try again later")
 	}
-	return payload.Data.(string), nil
+	var roomId string
+	err = json.Unmarshal(payload.Data, &roomId)
+	return roomId, err
 }
 
 func (m *CreateRoomForm) View() string {

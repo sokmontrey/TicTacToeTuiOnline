@@ -10,28 +10,20 @@ import (
 	"sync"
 )
 
-type GlobalBroadcastState struct {
-	Cells        []serverGame.Cell   `json:"cells"`
-	PlayerId     serverGame.PlayerId `json:"player-id"`
-	IsTerminated bool                `json:"is-terminated"`
-}
-
 type Room struct {
-	id              string
-	maxPlayers      int
-	game            *serverGame.Game
-	clients         map[*websocket.Conn]serverGame.PlayerId
-	globalBroadcast chan GlobalBroadcastState
-	mu              sync.Mutex
+	id         string
+	maxPlayers int
+	game       *serverGame.Game
+	clients    map[*websocket.Conn]serverGame.PlayerId
+	mu         sync.Mutex
 }
 
 func NewRoom(numPlayers int, id string) *Room {
 	return &Room{
-		id:              id,
-		maxPlayers:      numPlayers,
-		game:            nil, // TODO: NewGame(),
-		clients:         make(map[*websocket.Conn]serverGame.PlayerId),
-		globalBroadcast: make(chan GlobalBroadcastState),
+		id:         id,
+		maxPlayers: numPlayers,
+		game:       nil, // TODO: NewGame(),
+		clients:    make(map[*websocket.Conn]serverGame.PlayerId),
 	}
 }
 
@@ -44,11 +36,13 @@ func (r *Room) AddClient(conn *websocket.Conn) error {
 		return errors.New("room is full")
 	}
 	r.clients[conn] = serverGame.PlayerId(len(r.clients) + 1)
-	defer r.mu.Unlock()
+	r.mu.Unlock()
+	go r.listenToClient(conn)
+	pkg.NewPayload(pkg.ServerOkPayload, "joined room "+r.id).WsSend(conn)
 	return nil
 }
 
-func (r *Room) HandleClient(conn *websocket.Conn) {
+func (r *Room) listenToClient(conn *websocket.Conn) {
 	defer func() {
 		conn.Close()
 		r.mu.Lock()
@@ -68,23 +62,24 @@ func (r *Room) HandleClient(conn *websocket.Conn) {
 			log.Printf("Error unmarshaling payload: \"%s\", for room %s", err.Error(), r.id)
 			return
 		}
-		if r.RoutePayload(conn, payload) {
+		stop := r.RoutePayload(payload)
+		if stop {
 			return
 		}
 	}
 }
 
-func (r *Room) RoutePayload(conn *websocket.Conn, payload pkg.Payload) bool {
+func (r *Room) RoutePayload(payload pkg.Payload) bool {
 	switch payload.Type {
-	case pkg.ClientKeypressPayloadType:
-		var keyCode pkg.KeyCode
-		err := json.Unmarshal(payload.Data, &keyCode)
+	case pkg.ClientMovePayload:
+		var moveCode pkg.MoveCode
+		err := json.Unmarshal(payload.Data, &moveCode)
 		if err != nil {
-			log.Printf("Error unmarshaling key code: \"%s\", for room %s", err.Error(), r.id)
+			log.Printf("Error unmarshaling move code: \"%s\", for room %s", err.Error(), r.id)
 			return true
 		}
 		// TODO: Handle key code
-		log.Printf("Received payload from client: %v", keyCode)
+		log.Printf("Received payload from client: %v", moveCode)
 	default:
 		log.Printf("Received unknown payload from client: %v", payload)
 	}

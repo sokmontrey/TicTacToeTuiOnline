@@ -3,25 +3,27 @@ package pkg
 import (
 	"encoding/json"
 	"github.com/eiannone/keyboard"
+	"github.com/gin-gonic/gin"
+	"github.com/gorilla/websocket"
 )
 
-type PayloadType int
-type KeyCode byte
+type PayloadType byte
+
+type MoveCode byte
 
 const (
-	ServerErrPayloadType PayloadType = iota
-	ServerOkPayloadType
-	ClientKeypressPayloadType
+	ServerErrPayload PayloadType = iota
+	ServerOkPayload
+	ClientMovePayload
 )
 
 const (
-	KeyCodeEsc KeyCode = iota
-	KeyCodeConfirm
-	KeyCodeUp
-	KeyCodeDown
-	KeyCodeLeft
-	KeyCodeRight
-	KeyCodeNone
+	MoveCodeNone MoveCode = iota
+	MoveCodeConfirm
+	MoveCodeUp
+	MoveCodeDown
+	MoveCodeLeft
+	MoveCodeRight
 )
 
 type Payload struct {
@@ -29,68 +31,47 @@ type Payload struct {
 	Data json.RawMessage `json:"data"`
 }
 
-type ServerPayload struct {
-	Type PayloadType `json:"type"`
-	Data any         `json:"data"`
+func (p Payload) WsSend(conn *websocket.Conn) error {
+	return conn.WriteJSON(p)
 }
 
-type ClientPayload struct {
-	Type PayloadType `json:"type"`
-	Data KeyCode     `json:"data"`
+func (p Payload) HttpSend(statusCode int, c *gin.Context) error {
+	c.JSON(statusCode, p)
+	return nil
 }
 
-func NewOkServerPayload(data any) Payload {
+func NewPayload(payloadType PayloadType, data any) Payload {
 	rawData, _ := json.Marshal(data)
 	return Payload{
-		Type: ServerOkPayloadType,
+		Type: payloadType,
 		Data: rawData,
 	}
 }
 
-func NewErrServerPayload(data any) Payload {
-	rawData, _ := json.Marshal(data)
-	return Payload{
-		Type: ServerErrPayloadType,
-		Data: rawData,
+func CharToMoveCode(char rune) MoveCode {
+	mapCharToMoveCode := map[rune]MoveCode{
+		'w': MoveCodeUp,
+		's': MoveCodeDown,
+		'a': MoveCodeLeft,
+		'd': MoveCodeRight,
 	}
+	moveCode, ok := mapCharToMoveCode[char]
+	if ok {
+		return moveCode
+	}
+	return MoveCodeNone
 }
 
-func CharToKeyCode(char rune) KeyCode {
-	switch char {
-	case 'w':
-		return KeyCodeUp
-	case 's':
-		return KeyCodeDown
-	case 'a':
-		return KeyCodeLeft
-	case 'd':
-		return KeyCodeRight
-	case ' ':
-		return KeyCodeConfirm
+func KeyToMoveCode(key keyboard.Key) MoveCode {
+	mapKeyToMoveCode := map[keyboard.Key]MoveCode{
+		keyboard.KeyArrowUp:    MoveCodeUp,
+		keyboard.KeyArrowDown:  MoveCodeDown,
+		keyboard.KeyArrowLeft:  MoveCodeLeft,
+		keyboard.KeyArrowRight: MoveCodeRight,
 	}
-	return KeyCodeNone
-}
-
-func KeyPressToKeyCode(key keyboard.Key) KeyCode {
-	switch key {
-	case keyboard.KeyArrowUp:
-		return KeyCodeUp
-	case keyboard.KeyArrowDown:
-		return KeyCodeDown
-	case keyboard.KeyArrowLeft:
-		return KeyCodeLeft
-	case keyboard.KeyArrowRight:
-		return KeyCodeRight
-	case keyboard.KeyEnter, keyboard.KeySpace:
-		return KeyCodeConfirm
+	moveCode, ok := mapKeyToMoveCode[key]
+	if ok {
+		return moveCode
 	}
-	return KeyCodeNone
-}
-
-func NewKeypressClientPayload(key KeyCode) Payload {
-	rawData, _ := json.Marshal(key)
-	return Payload{
-		Type: ClientKeypressPayloadType,
-		Data: rawData,
-	}
+	return MoveCodeNone
 }

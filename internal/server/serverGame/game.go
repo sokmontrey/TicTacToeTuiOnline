@@ -1,6 +1,8 @@
 package serverGame
 
-import "github.com/sokmontrey/TicTacToeTuiOnline/pkg"
+import (
+	"github.com/sokmontrey/TicTacToeTuiOnline/pkg"
+)
 
 type Cell struct {
 	position pkg.Vec2

@@ -3,17 +3,18 @@ package page
 import (
 	tm "github.com/buger/goterm"
 	"github.com/eiannone/keyboard"
+	"github.com/sokmontrey/TicTacToeTuiOnline/internal/client/pageMsg"
 )
 
 type PageManager struct {
 	currentPage Page
-	msg         chan PageMsg
+	msg         chan pageMsg.PageMsg
 }
 
 func NewPageManager() *PageManager {
 	return &PageManager{
 		currentPage: nil,
-		msg:         make(chan PageMsg),
+		msg:         make(chan pageMsg.PageMsg),
 	}
 }
 
@@ -34,7 +35,7 @@ func (pm *PageManager) listenForKeyboardInput() {
 		if err != nil {
 			panic(err)
 		}
-		pm.msg <- KeyMsg{char, key}
+		pm.msg <- pageMsg.NewKeyMsg(char, key)
 	}
 }
 
@@ -47,7 +48,7 @@ func (pm *PageManager) Run() {
 		case msg := <-pm.msg:
 			pageCmd := pm.currentPage.Update(msg)
 			switch pageCmd {
-			case ProgramQuit:
+			case QuitCommand:
 				return
 			default:
 				continue
