@@ -63,7 +63,7 @@ func (m *JoinRoomForm) deleteChar() {
 }
 
 func (m *JoinRoomForm) View() string {
-	s := "Join room\n\n"
+	s := "AddClient room\n\n"
 	s += fmt.Sprintf("Room id (4 digits number): %s_ \n", m.roomId)
 	s += fmt.Sprintf("%s                                \n", m.msg)
 	return s

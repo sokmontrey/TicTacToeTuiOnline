@@ -12,32 +12,32 @@ import (
 type GameRoom struct {
 	pageManager *PageManager
 	roomId      string
-	msg         string
+	displayMsg  string
 	conn        *websocket.Conn
-	moveChan    chan pkg.Payload
+	move        chan pkg.Payload
 }
 
 func NewGameRoom(pm *PageManager, roomId string) *GameRoom {
 	return &GameRoom{
 		pageManager: pm,
 		roomId:      roomId,
-		msg:         "",
-		moveChan:    make(chan pkg.Payload),
+		displayMsg:  "",
+		move:        make(chan pkg.Payload),
 	}
 }
 
 func (m *GameRoom) Init() {
 	go m.connectAndListenToServer()
-	go m.listenForMoves()
+	go m.listenForMove()
 }
 
 func (m *GameRoom) Update(msg pageMsg.PageMsg) Command {
-	m.msg = ""
+	m.displayMsg = "                                          "
 	switch msg := msg.(type) {
 	case pageMsg.OkMsg:
-		m.msg = msg.Data.(string)
+		m.displayMsg = msg.Data.(string)
 	case pageMsg.ErrMsg:
-		m.msg = "Error: " + msg.Data.(string)
+		m.displayMsg = "Error: " + msg.Data.(string)
 		return QuitCommand // TODO: handle reconnection
 	case pageMsg.KeyMsg:
 		switch msg.Key {
@@ -46,7 +46,7 @@ func (m *GameRoom) Update(msg pageMsg.PageMsg) Command {
 		}
 		moveCode := msg.ToMoveCode()
 		if moveCode != pkg.MoveCodeNone {
-			m.moveChan <- pkg.NewPayload(pkg.ClientMovePayload, moveCode)
+			m.move <- pkg.NewPayload(pkg.ClientMovePayload, moveCode)
 		}
 		return NoneCommand
 	}
@@ -56,15 +56,16 @@ func (m *GameRoom) Update(msg pageMsg.PageMsg) Command {
 func (m *GameRoom) View() string {
 	s := "Game room\n\n"
 	s += fmt.Sprintf("Room id: %s\n", m.roomId)
-	s += fmt.Sprintf("%s\n", m.msg)
+	s += fmt.Sprintf("%s\n", m.displayMsg)
 	return s
 }
 
-func (m *GameRoom) listenForMoves() {
+func (m *GameRoom) listenForMove() {
 	for {
 		select {
-		case msg := <-m.moveChan:
-			if err := m.conn.WriteJSON(msg); err != nil {
+		case move := <-m.move:
+			err := move.WsSend(m.conn)
+			if err != nil {
 				m.pageManager.msg <- pageMsg.NewErrMsg("Unable to send message to the server")
 				return
 			}

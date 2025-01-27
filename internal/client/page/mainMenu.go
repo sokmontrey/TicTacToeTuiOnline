@@ -21,8 +21,8 @@ func NewMainMenu(pm *PageManager) *MainMenu {
 	return &MainMenu{
 		pageManager: pm,
 		options: []MenuOption{
-			{"Create room", pm.ToCreateRoomForm},
-			{"Join room", pm.ToJoinRoomForm},
+			{"Create a room", pm.ToCreateRoomForm},
+			{"Join a room", pm.ToJoinRoomForm},
 		},
 		cursor: 0,
 	}
