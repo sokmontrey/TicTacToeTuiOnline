@@ -22,7 +22,7 @@ func NewRoom(numPlayers int, id string) *Room {
 		id:         id,
 		maxPlayers: numPlayers,
 		clients:    make(map[int]*Client),
-		move:       make(chan clientMove),
+		move:       make(chan clientMove, 10),
 	}
 }
 
@@ -35,13 +35,12 @@ func (r *Room) Start() {
 }
 
 func (r *Room) listenForClientsMove() {
-	select {
-	case move := <-r.move:
-		r.mu.Lock()
-		defer r.mu.Unlock()
+	for move := range r.move {
 		str := fmt.Sprintf("Player %d moved with %v", move.clientId, move.moveCode)
 		payload := pkg.NewPayload(pkg.ServerOkPayload, str)
+		r.mu.Lock()
 		r.Broadcast(payload)
+		r.mu.Unlock()
 	}
 }
 
