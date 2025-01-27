@@ -44,15 +44,6 @@ func (r *Room) listenForClientsMove() {
 	}
 }
 
-//func (r *Room) ClientMove(clientId int, moveCode pkg.MoveCode) {
-//	r.mu.Lock()
-//	defer r.mu.Unlock()
-//	str := fmt.Sprintf("Player %d moved with %v", clientId, moveCode)
-//	log.Print(str)
-//	payload := pkg.NewPayload(pkg.ServerOkPayload, str)
-//	r.Broadcast(payload)
-//}
-
 func (r *Room) Broadcast(payload pkg.Payload) {
 	for _, client := range r.clients {
 		err := payload.WsSend(client.conn)

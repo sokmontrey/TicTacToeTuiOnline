@@ -27,30 +27,32 @@ func NewClient(clientId int, conn *websocket.Conn, room *Room) *Client {
 }
 
 func (c *Client) Run() {
-	go c.listenForPayload()
+	go func() {
+		defer func() {
+			c.conn.Close()
+			c.room.RemoveClient(c.clientId) // TODO: handle error
+		}()
+		for {
+			c.listenForPayload()
+		}
+	}()
 }
 
 func (c *Client) listenForPayload() {
-	defer func() {
-		c.conn.Close()
-		c.room.RemoveClient(c.clientId) // TODO: handle error
-	}()
-	for {
-		_, msg, err := c.conn.ReadMessage()
-		if err != nil {
-			log.Printf("Error reading message from client: \"%s\", for room %s", err.Error(), c.room.id)
-			return
-		}
-		var payload pkg.Payload
-		err = json.Unmarshal(msg, &payload)
-		if err != nil {
-			log.Printf("Error unmarshaling payload: \"%s\", for room %s", err.Error(), c.room.id)
-			return
-		}
-		stop := c.routePayload(payload)
-		if stop {
-			return
-		}
+	_, msg, err := c.conn.ReadMessage()
+	if err != nil {
+		log.Printf("Error reading message from client: \"%s\", for room %s", err.Error(), c.room.id)
+		return
+	}
+	var payload pkg.Payload
+	err = json.Unmarshal(msg, &payload)
+	if err != nil {
+		log.Printf("Error unmarshaling payload: \"%s\", for room %s", err.Error(), c.room.id)
+		return
+	}
+	stop := c.routePayload(payload)
+	if stop {
+		return
 	}
 }
 
