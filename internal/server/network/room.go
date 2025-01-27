@@ -14,6 +14,7 @@ type Room struct {
 	maxPlayers int
 	clients    map[int]*Client
 	mu         sync.Mutex
+	move       chan clientMove
 }
 
 func NewRoom(numPlayers int, id string) *Room {
@@ -21,20 +22,37 @@ func NewRoom(numPlayers int, id string) *Room {
 		id:         id,
 		maxPlayers: numPlayers,
 		clients:    make(map[int]*Client),
+		move:       make(chan clientMove),
 	}
 }
 
 func (r *Room) Start() {
+	go func() {
+		for {
+			r.listenForClientsMove()
+		}
+	}()
 }
 
-func (r *Room) ClientMove(clientId int, moveCode pkg.MoveCode) {
-	r.mu.Lock()
-	defer r.mu.Unlock()
-	str := fmt.Sprintf("Player %d moved with %v", clientId, moveCode)
-	log.Print(str)
-	payload := pkg.NewPayload(pkg.ServerOkPayload, str)
-	r.Broadcast(payload)
+func (r *Room) listenForClientsMove() {
+	select {
+	case move := <-r.move:
+		r.mu.Lock()
+		defer r.mu.Unlock()
+		str := fmt.Sprintf("Player %d moved with %v", move.clientId, move.moveCode)
+		payload := pkg.NewPayload(pkg.ServerOkPayload, str)
+		r.Broadcast(payload)
+	}
 }
+
+//func (r *Room) ClientMove(clientId int, moveCode pkg.MoveCode) {
+//	r.mu.Lock()
+//	defer r.mu.Unlock()
+//	str := fmt.Sprintf("Player %d moved with %v", clientId, moveCode)
+//	log.Print(str)
+//	payload := pkg.NewPayload(pkg.ServerOkPayload, str)
+//	r.Broadcast(payload)
+//}
 
 func (r *Room) Broadcast(payload pkg.Payload) {
 	for _, client := range r.clients {

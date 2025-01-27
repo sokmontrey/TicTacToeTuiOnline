@@ -64,7 +64,8 @@ func (c *Client) routePayload(payload pkg.Payload) bool {
 			return true
 		}
 		if moveCode != pkg.MoveCodeNone {
-			c.room.ClientMove(c.clientId, moveCode)
+			//c.room.ClientMove(c.clientId, moveCode)
+			c.room.move <- clientMove{c.clientId, moveCode}
 		}
 	}
 	return false
