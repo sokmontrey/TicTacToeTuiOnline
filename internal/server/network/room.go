@@ -27,20 +27,18 @@ func NewRoom(numPlayers int, id string) *Room {
 }
 
 func (r *Room) Start() {
-	go func() {
-		for {
-			r.listenForClientsMove()
-		}
-	}()
+	go r.listenForClientsMove()
 }
 
 func (r *Room) listenForClientsMove() {
-	for move := range r.move {
-		str := fmt.Sprintf("Player %d moved with %v", move.clientId, move.moveCode)
-		payload := pkg.NewPayload(pkg.ServerOkPayload, str)
-		r.mu.Lock()
-		r.Broadcast(payload)
-		r.mu.Unlock()
+	for {
+		for move := range r.move {
+			str := fmt.Sprintf("Player %d moved with %v", move.clientId, move.moveCode)
+			payload := pkg.NewPayload(pkg.ServerOkPayload, str)
+			r.mu.Lock()
+			r.Broadcast(payload)
+			r.mu.Unlock()
+		}
 	}
 }
 
