@@ -31,41 +31,78 @@ func (g *Game) UpdatePlayerPosition(playerId int, position pkg.Vec2) {
 	g.players[playerId].Position = position
 }
 
-func (g *Game) getPlayerCells() map[pkg.Vec2]string {
-	playerCells := make(map[pkg.Vec2]string)
-	idToMark := []string{"A", "B", "C", "D"}
+func (g *Game) getPlayerCells() map[pkg.Vec2]int {
+	playerCells := make(map[pkg.Vec2]int)
 	for i, player := range g.players {
-		playerCells[player.Position] = idToMark[i]
+		playerCells[player.Position] = i
 	}
 	return playerCells
 }
 
-func (g *Game) GetPlayers() map[int]*Player {
-	return g.players
-}
-
-func (g *Game) GetPlayer(playerId int) *Player {
-	return g.players[playerId]
+func (g *Game) getPlayerMark(playerId int) (rune, rune, rune) {
+	switch playerId {
+	case 1:
+		return '[', 'X', ']'
+	case 2:
+		return '(', 'O', ')'
+	case 3:
+		return '{', '#', '}'
+	}
+	return '|', '$', '|'
 }
 
 func (g *Game) Render(offset int) int {
+	g.clearPrevPlayerPositions(offset)
+	g.renderPlayerPositions(offset)
+	g.clearPrevCells(offset)
+	return offset + g.radius*2 + 1
+}
+
+func (g *Game) renderPlayerPositions(offset int) {
 	playerCells := g.getPlayerCells()
 	for y := 0; y < g.radius*2+1; y++ {
 		for x := 0; x < g.radius*2+1; x++ {
 			cellPos := pkg.NewVec2(x, y)
-			mark, ok := playerCells[cellPos.Sub(pkg.NewVec2(g.radius, g.radius))]
+			id, ok := playerCells[cellPos.Sub(pkg.NewVec2(g.radius, g.radius))]
+			left, _, right := g.getPlayerMark(id)
+			cellPos = cellPos.DownBy(offset)
 			if ok {
-				g.setCell(cellPos.DownBy(offset), rune(mark[0]))
+				g.drawCursor(cellPos, left, right)
 			} else {
-				g.setCell(cellPos.DownBy(offset), '.')
+				g.setCell(cellPos, '.')
 			}
 		}
 	}
-	return offset + g.radius*2 + 1
 }
 
-func (g *Game) setCell(vec2 pkg.Vec2, ch rune) {
-	termbox.SetCell(vec2.X*2, vec2.Y, ch, termbox.ColorDefault, termbox.ColorDefault)
+func (g *Game) clearPrevPlayerPositions(offset int) {
+	for y := 0; y < g.radius*2+1; y++ {
+		for x := 0; x < g.radius*2+1; x++ {
+			cellPos := pkg.NewVec2(x, y)
+			cellPos = cellPos.DownBy(offset)
+			g.drawCursor(cellPos, ' ', ' ')
+		}
+	}
+}
+
+func (g *Game) clearPrevCells(offset int) {
+	for y := 0; y < g.radius*2+1; y++ {
+		for x := 0; x < g.radius*2+1; x++ {
+			cellPos := pkg.NewVec2(x, y)
+			cellPos = cellPos.DownBy(offset)
+			cellPos.X = cellPos.X * 2
+			g.setCell(cellPos, '.')
+		}
+	}
+}
+
+func (g *Game) setCell(pos pkg.Vec2, ch rune) {
+	termbox.SetCell(pos.X*2+1, pos.Y, ch, termbox.ColorDefault, termbox.ColorDefault)
+}
+
+func (g *Game) drawCursor(pos pkg.Vec2, left, right rune) {
+	termbox.SetCell(pos.X*2, pos.Y, left, termbox.ColorDefault, termbox.ColorDefault)
+	termbox.SetCell(pos.X*2+2, pos.Y, right, termbox.ColorDefault, termbox.ColorDefault)
 }
 
 // ============================================================================
@@ -74,14 +111,14 @@ func (g *Game) setCell(vec2 pkg.Vec2, ch rune) {
 
 func (g *Game) UpdateState(playerId int, moveCode pkg.MoveCode) (global pkg.Payload, direct pkg.Payload) {
 	player := g.players[playerId]
-	updatePosition, ok := map[pkg.MoveCode]func() pkg.Vec2{
+	moveFunc, ok := map[pkg.MoveCode]func() pkg.Vec2{
 		pkg.MoveCodeUp:    player.MoveUp,
 		pkg.MoveCodeDown:  player.MoveDown,
 		pkg.MoveCodeLeft:  player.MoveLeft,
 		pkg.MoveCodeRight: player.MoveRight,
 	}[moveCode]
 	if ok {
-		newPos := updatePosition()
+		newPos := moveFunc()
 		return pkg.NewPositionUpdatePayload(playerId, newPos), pkg.NewNonePayload()
 	}
 	if moveCode == pkg.MoveCodeConfirm {
