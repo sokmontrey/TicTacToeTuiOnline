@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/eiannone/keyboard"
-	"github.com/gdamore/tcell"
 	"github.com/gorilla/websocket"
 	"github.com/nsf/termbox-go"
 	"github.com/sokmontrey/TicTacToeTuiOnline/internal/client/pageMsg"
@@ -20,12 +19,9 @@ type GameRoom struct {
 	conn        *websocket.Conn
 	move        chan pkg.Payload
 	game        *game.Game
-	radius      int
 }
 
 func NewGameRoom(pm *PageManager, roomId string) *GameRoom {
-	screen, _ := tcell.NewScreen()
-	screen.Init()
 	return &GameRoom{
 		pageManager: pm,
 		playerId:    1,
@@ -33,7 +29,6 @@ func NewGameRoom(pm *PageManager, roomId string) *GameRoom {
 		displayMsg:  "",
 		move:        make(chan pkg.Payload),
 		game:        game.NewGame(2),
-		radius:      7,
 	}
 }
 
@@ -41,34 +36,14 @@ func (m *GameRoom) Init() {
 	go m.connectAndListenToServer()
 	go m.listenForMove()
 	termbox.Clear(termbox.ColorDefault, termbox.ColorDefault)
-	//for y := 0; y < m.radius*2+1; y++ {
-	//	for x := 0; x < m.radius*2+1; x++ {
-	//		m.setCell(pkg.NewVec2(x, y), '.')
-	//	}
-	//}
 }
 
 func (m *GameRoom) Render() {
-	//s := "Game room\n\n"
-	//s += fmt.Sprintf("Room id: %s\n", m.roomId)
-	//
-	playerCells := m.game.GetPlayerCells()
-	for y := 0; y < m.radius*2+1; y++ {
-		for x := 0; x < m.radius*2+1; x++ {
-			cellPos := pkg.NewVec2(x, y)
-			mark, ok := playerCells[cellPos.Sub(pkg.NewVec2(m.radius, m.radius))]
-			if ok {
-				m.setCell(cellPos, rune(mark[0]))
-			} else {
-				m.setCell(cellPos, '.')
-			}
-		}
-	}
+	pkg.TUIWriteText(0, "TicTacToeTui")
+	pkg.TUIWriteText(1, fmt.Sprintf("Room id: %s", m.roomId))
+	nextLine := m.game.Render(2)
+	pkg.TUIWriteText(nextLine, m.displayMsg)
 	termbox.Flush()
-}
-
-func (m *GameRoom) setCell(vec2 pkg.Vec2, ch rune) {
-	termbox.SetCell(vec2.X*2, vec2.Y, ch, termbox.ColorDefault, termbox.ColorDefault)
 }
 
 func (m *GameRoom) Update(msg pageMsg.PageMsg) Command {

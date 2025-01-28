@@ -36,3 +36,19 @@ func (v *Vec2) Left() Vec2 {
 func (v *Vec2) Right() Vec2 {
 	return Vec2{v.X + 1, v.Y}
 }
+
+func (v *Vec2) UpBy(unit int) Vec2 {
+	return Vec2{v.X, v.Y - unit}
+}
+
+func (v *Vec2) DownBy(unit int) Vec2 {
+	return Vec2{v.X, v.Y + unit}
+}
+
+func (v *Vec2) LeftBy(unit int) Vec2 {
+	return Vec2{v.X - unit, v.Y}
+}
+
+func (v *Vec2) RightBy(unit int) Vec2 {
+	return Vec2{v.X + unit, v.Y}
+}
