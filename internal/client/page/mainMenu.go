@@ -1,9 +1,9 @@
 package page
 
 import (
+	"fmt"
 	"github.com/eiannone/keyboard"
 	"github.com/sokmontrey/TicTacToeTuiOnline/internal/client/pageMsg"
-	"github.com/sokmontrey/TicTacToeTuiOnline/pkg"
 )
 
 type MenuOption struct {
@@ -15,14 +15,12 @@ type MainMenu struct {
 	pageManager  *PageManager
 	options      []MenuOption
 	optionCursor int
-	tui          *pkg.TUI
 }
 
 func NewMainMenu(pm *PageManager) *MainMenu {
 	return &MainMenu{
 		pageManager:  pm,
 		optionCursor: 0,
-		tui:          pkg.NewTUI(),
 		options: []MenuOption{
 			{"Create a room", pm.ToCreateRoomForm},
 			{"Join a room", pm.ToJoinRoomForm},
@@ -34,16 +32,15 @@ func (m *MainMenu) Init() {
 }
 
 func (m *MainMenu) Render() {
-	//m.tui.Clear()
-	//m.tui.Write("TicTacToe Online")
-	//for i, option := range m.options {
-	//	if i == m.optionCursor {
-	//		m.tui.Writef(">%s", option.Name)
-	//	} else {
-	//		m.tui.Writef(" %s", option.Name)
-	//	}
-	//}
-	//m.tui.Show()
+	fmt.Print("\033[H\033[2J")
+	fmt.Println("TicTacToe TUI")
+	for i, option := range m.options {
+		if i == m.optionCursor {
+			fmt.Printf("[%s]\n", option.Name)
+		} else {
+			fmt.Printf(" %s \n", option.Name)
+		}
+	}
 }
 
 func (m *MainMenu) Update(msg pageMsg.PageMsg) Command {

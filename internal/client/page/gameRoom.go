@@ -4,7 +4,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/eiannone/keyboard"
+	"github.com/gdamore/tcell"
 	"github.com/gorilla/websocket"
+	"github.com/nsf/termbox-go"
 	"github.com/sokmontrey/TicTacToeTuiOnline/internal/client/pageMsg"
 	"github.com/sokmontrey/TicTacToeTuiOnline/internal/game"
 	"github.com/sokmontrey/TicTacToeTuiOnline/pkg"
@@ -22,6 +24,8 @@ type GameRoom struct {
 }
 
 func NewGameRoom(pm *PageManager, roomId string) *GameRoom {
+	screen, _ := tcell.NewScreen()
+	screen.Init()
 	return &GameRoom{
 		pageManager: pm,
 		playerId:    1,
@@ -36,10 +40,39 @@ func NewGameRoom(pm *PageManager, roomId string) *GameRoom {
 func (m *GameRoom) Init() {
 	go m.connectAndListenToServer()
 	go m.listenForMove()
+	termbox.Clear(termbox.ColorDefault, termbox.ColorDefault)
+	//for y := 0; y < m.radius*2+1; y++ {
+	//	for x := 0; x < m.radius*2+1; x++ {
+	//		m.setCell(pkg.NewVec2(x, y), '.')
+	//	}
+	//}
+}
+
+func (m *GameRoom) Render() {
+	//s := "Game room\n\n"
+	//s += fmt.Sprintf("Room id: %s\n", m.roomId)
+	//
+	playerCells := m.game.GetPlayerCells()
+	for y := 0; y < m.radius*2+1; y++ {
+		for x := 0; x < m.radius*2+1; x++ {
+			cellPos := pkg.NewVec2(x, y)
+			mark, ok := playerCells[cellPos.Sub(pkg.NewVec2(m.radius, m.radius))]
+			if ok {
+				m.setCell(cellPos, rune(mark[0]))
+			} else {
+				m.setCell(cellPos, '.')
+			}
+		}
+	}
+	termbox.Flush()
+}
+
+func (m *GameRoom) setCell(vec2 pkg.Vec2, ch rune) {
+	termbox.SetCell(vec2.X*2, vec2.Y, ch, termbox.ColorDefault, termbox.ColorDefault)
 }
 
 func (m *GameRoom) Update(msg pageMsg.PageMsg) Command {
-	m.displayMsg = "                                          "
+	m.displayMsg = ""
 	switch msg := msg.(type) {
 	case pageMsg.JoinedIdMsg:
 		m.playerId = msg.PlayerId
@@ -66,27 +99,6 @@ func (m *GameRoom) Update(msg pageMsg.PageMsg) Command {
 		return NoneCommand
 	}
 	return NoneCommand
-}
-
-func (m *GameRoom) Render() {
-	s := "Game room\n\n"
-	s += fmt.Sprintf("Room id: %s\n", m.roomId)
-
-	playerCells := m.game.GetPlayerCells()
-	pos := m.game.GetPlayer(m.playerId).Position
-	for y := -m.radius + pos.Y; y < m.radius+pos.Y; y++ {
-		for x := -m.radius + pos.X; x < m.radius+pos.X; x++ {
-			cellPos := pkg.NewVec2(x, y)
-			mark, ok := playerCells[cellPos]
-			if ok {
-				s += fmt.Sprintf("%s ", mark)
-			} else {
-				s += fmt.Sprintf(". ")
-			}
-		}
-		s += "\n"
-	}
-	s += fmt.Sprintf("%s\n", m.displayMsg)
 }
 
 func (m *GameRoom) listenForMove() {

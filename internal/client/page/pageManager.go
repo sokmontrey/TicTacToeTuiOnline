@@ -2,6 +2,7 @@ package page
 
 import (
 	"github.com/eiannone/keyboard"
+	"github.com/nsf/termbox-go"
 	"github.com/sokmontrey/TicTacToeTuiOnline/internal/client/pageMsg"
 )
 
@@ -18,6 +19,8 @@ func NewPageManager() *PageManager {
 }
 
 func (pm *PageManager) Init() {
+	termbox.Init()
+	termbox.SetInputMode(termbox.InputEsc)
 	go pm.listenForKeyboardInput()
 }
 
@@ -27,6 +30,7 @@ func (pm *PageManager) listenForKeyboardInput() {
 	}
 	defer func() {
 		_ = keyboard.Close()
+		termbox.Close()
 	}()
 
 	for {

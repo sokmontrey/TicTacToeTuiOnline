@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	tm "github.com/buger/goterm"
 	"github.com/eiannone/keyboard"
 	"github.com/sokmontrey/TicTacToeTuiOnline/internal/client/pageMsg"
 	"github.com/sokmontrey/TicTacToeTuiOnline/pkg"
@@ -30,15 +29,13 @@ func NewCreateRoomForm(pm *PageManager) *CreateRoomForm {
 }
 
 func (m *CreateRoomForm) Init() {
-	tm.Clear()
-	tm.MoveCursor(1, 1)
-	tm.Println("Create room")
-	tm.Println("Number of players: < a >")
-	tm.Printf("%s\n", m.msg)
-	tm.Flush()
 }
 
 func (m *CreateRoomForm) Render() {
+	fmt.Print("\033[H\033[2J")
+	fmt.Println("Create room")
+	fmt.Printf("Number of players: < %d >\n", m.numPlayers)
+	fmt.Printf("%s\n", m.msg)
 }
 
 func (m *CreateRoomForm) Update(msg pageMsg.PageMsg) Command {
