@@ -6,23 +6,30 @@ import (
 	"github.com/eiannone/keyboard"
 	"github.com/gorilla/websocket"
 	"github.com/sokmontrey/TicTacToeTuiOnline/internal/client/pageMsg"
+	"github.com/sokmontrey/TicTacToeTuiOnline/internal/game"
 	"github.com/sokmontrey/TicTacToeTuiOnline/pkg"
 )
 
 type GameRoom struct {
 	pageManager *PageManager
+	playerId    int
 	roomId      string
 	displayMsg  string
 	conn        *websocket.Conn
 	move        chan pkg.Payload
+	game        *game.Game
+	radius      int
 }
 
 func NewGameRoom(pm *PageManager, roomId string) *GameRoom {
 	return &GameRoom{
 		pageManager: pm,
+		playerId:    1,
 		roomId:      roomId,
 		displayMsg:  "",
 		move:        make(chan pkg.Payload),
+		game:        game.NewGame(2),
+		radius:      7,
 	}
 }
 
@@ -34,6 +41,9 @@ func (m *GameRoom) Init() {
 func (m *GameRoom) Update(msg pageMsg.PageMsg) Command {
 	m.displayMsg = "                                          "
 	switch msg := msg.(type) {
+	case pageMsg.JoinedIdMsg:
+		m.playerId = msg.PlayerId
+		return NoneCommand
 	case pageMsg.OkMsg:
 		m.displayMsg = msg.Data.(string)
 	case pageMsg.ErrMsg:
@@ -49,15 +59,34 @@ func (m *GameRoom) Update(msg pageMsg.PageMsg) Command {
 			m.move <- pkg.NewPayload(pkg.ClientMovePayload, moveCode)
 		}
 		return NoneCommand
+	case pageMsg.PositionMsg:
+		playerId := msg.PlayerId
+		position := msg.Position
+		m.game.UpdatePlayerPosition(playerId, position)
+		return NoneCommand
 	}
 	return NoneCommand
 }
 
-func (m *GameRoom) View() string {
+func (m *GameRoom) Render() {
 	s := "Game room\n\n"
 	s += fmt.Sprintf("Room id: %s\n", m.roomId)
+
+	playerCells := m.game.GetPlayerCells()
+	pos := m.game.GetPlayer(m.playerId).Position
+	for y := -m.radius + pos.Y; y < m.radius+pos.Y; y++ {
+		for x := -m.radius + pos.X; x < m.radius+pos.X; x++ {
+			cellPos := pkg.NewVec2(x, y)
+			mark, ok := playerCells[cellPos]
+			if ok {
+				s += fmt.Sprintf("%s ", mark)
+			} else {
+				s += fmt.Sprintf(". ")
+			}
+		}
+		s += "\n"
+	}
 	s += fmt.Sprintf("%s\n", m.displayMsg)
-	return s
 }
 
 func (m *GameRoom) listenForMove() {
@@ -97,10 +126,20 @@ func (m *GameRoom) connectAndListenToServer() {
 		}
 		var msgStr string
 		json.Unmarshal(payload.Data, &msgStr)
-		if payload.Type == pkg.ServerErrPayload {
+		switch payload.Type {
+		case pkg.ServerErrPayload:
 			m.pageManager.msg <- pageMsg.NewErrMsg(msgStr)
-		} else if payload.Type == pkg.ServerOkPayload {
+		case pkg.ServerOkPayload:
 			m.pageManager.msg <- pageMsg.NewOkMsg(msgStr)
-		} // TODO: Game update payload
+		case pkg.ServerPositionPayload:
+			var positionUpdate pkg.PositionUpdate
+			json.Unmarshal(payload.Data, &positionUpdate)
+			m.pageManager.msg <- pageMsg.NewPositionMsg(positionUpdate.PlayerId, positionUpdate.Position)
+		case pkg.ServerJoinedIdPayload:
+			var joinedId int
+			json.Unmarshal(payload.Data, &joinedId)
+			m.pageManager.msg <- pageMsg.NewJoinedIdMsg(joinedId)
+		}
+		// TODO: Game update payload
 	}
 }

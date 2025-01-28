@@ -19,6 +19,7 @@ type PositionUpdate struct {
 const (
 	ServerErrPayload PayloadType = iota
 	ServerOkPayload
+	ServerJoinedIdPayload
 	ServerPositionPayload
 	//ServerBoardUpdatePayload
 	ClientMovePayload
@@ -58,6 +59,10 @@ func NewPayload(payloadType PayloadType, data any) Payload {
 
 func NewNonePayload() Payload {
 	return NewPayload(NonePayload, nil)
+}
+
+func NewJoinedIdPayload(playerId int) Payload {
+	return NewPayload(ServerJoinedIdPayload, playerId)
 }
 
 func NewPositionUpdatePayload(playerId int, position Vec2) Payload {

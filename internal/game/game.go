@@ -1,4 +1,4 @@
-package serverGame
+package game
 
 import (
 	"github.com/sokmontrey/TicTacToeTuiOnline/pkg"
@@ -19,6 +19,35 @@ func NewGame(numPlayers int) *Game {
 	}
 	return g
 }
+
+// ============================================================================
+// Client Related Functions
+// ============================================================================
+
+func (g *Game) UpdatePlayerPosition(playerId int, position pkg.Vec2) {
+	g.players[playerId].Position = position
+}
+
+func (g *Game) GetPlayerCells() map[pkg.Vec2]string {
+	playerCells := make(map[pkg.Vec2]string)
+	idToMark := []string{"A", "B", "C", "D"}
+	for i, player := range g.players {
+		playerCells[player.Position] = idToMark[i]
+	}
+	return playerCells
+}
+
+func (g *Game) GetPlayers() map[int]*Player {
+	return g.players
+}
+
+func (g *Game) GetPlayer(playerId int) *Player {
+	return g.players[playerId]
+}
+
+// ============================================================================
+// Server Related Functions
+// ============================================================================
 
 func (g *Game) UpdateState(playerId int, moveCode pkg.MoveCode) (global pkg.Payload, direct pkg.Payload) {
 	player := g.players[playerId]

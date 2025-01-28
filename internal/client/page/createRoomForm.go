@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	tm "github.com/buger/goterm"
 	"github.com/eiannone/keyboard"
 	"github.com/sokmontrey/TicTacToeTuiOnline/internal/client/pageMsg"
 	"github.com/sokmontrey/TicTacToeTuiOnline/pkg"
@@ -29,6 +30,15 @@ func NewCreateRoomForm(pm *PageManager) *CreateRoomForm {
 }
 
 func (m *CreateRoomForm) Init() {
+	tm.Clear()
+	tm.MoveCursor(1, 1)
+	tm.Println("Create room")
+	tm.Println("Number of players: < a >")
+	tm.Printf("%s\n", m.msg)
+	tm.Flush()
+}
+
+func (m *CreateRoomForm) Render() {
 }
 
 func (m *CreateRoomForm) Update(msg pageMsg.PageMsg) Command {
@@ -91,11 +101,4 @@ func (m *CreateRoomForm) requestCreateRoom() (string, error) {
 	var roomId string
 	err = json.Unmarshal(payload.Data, &roomId)
 	return roomId, err
-}
-
-func (m *CreateRoomForm) View() string {
-	s := "Create room\n\n"
-	s += fmt.Sprintf("Number of players: < %d >\n", m.numPlayers)
-	s += fmt.Sprintf("%s\n", m.msg)
-	return s
 }

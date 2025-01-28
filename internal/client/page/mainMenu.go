@@ -1,9 +1,9 @@
 package page
 
 import (
-	"fmt"
 	"github.com/eiannone/keyboard"
 	"github.com/sokmontrey/TicTacToeTuiOnline/internal/client/pageMsg"
+	"github.com/sokmontrey/TicTacToeTuiOnline/pkg"
 )
 
 type MenuOption struct {
@@ -12,23 +12,38 @@ type MenuOption struct {
 }
 
 type MainMenu struct {
-	pageManager *PageManager
-	options     []MenuOption
-	cursor      int
+	pageManager  *PageManager
+	options      []MenuOption
+	optionCursor int
+	tui          *pkg.TUI
 }
 
 func NewMainMenu(pm *PageManager) *MainMenu {
 	return &MainMenu{
-		pageManager: pm,
+		pageManager:  pm,
+		optionCursor: 0,
+		tui:          pkg.NewTUI(),
 		options: []MenuOption{
 			{"Create a room", pm.ToCreateRoomForm},
 			{"Join a room", pm.ToJoinRoomForm},
 		},
-		cursor: 0,
 	}
 }
 
 func (m *MainMenu) Init() {
+}
+
+func (m *MainMenu) Render() {
+	//m.tui.Clear()
+	//m.tui.Write("TicTacToe Online")
+	//for i, option := range m.options {
+	//	if i == m.optionCursor {
+	//		m.tui.Writef(">%s", option.Name)
+	//	} else {
+	//		m.tui.Writef(" %s", option.Name)
+	//	}
+	//}
+	//m.tui.Show()
 }
 
 func (m *MainMenu) Update(msg pageMsg.PageMsg) Command {
@@ -38,7 +53,7 @@ func (m *MainMenu) Update(msg pageMsg.PageMsg) Command {
 		case keyboard.KeyEsc, keyboard.KeyCtrlC:
 			return QuitCommand
 		case keyboard.KeyEnter, keyboard.KeySpace:
-			m.options[m.cursor].Action()
+			m.options[m.optionCursor].Action()
 		case keyboard.KeyArrowUp:
 			m.moveCursor(1)
 		case keyboard.KeyArrowDown:
@@ -56,22 +71,10 @@ func (m *MainMenu) Update(msg pageMsg.PageMsg) Command {
 }
 
 func (m *MainMenu) moveCursor(delta int) {
-	m.cursor += delta
-	if m.cursor < 0 {
-		m.cursor = len(m.options) - 1
-	} else if m.cursor >= len(m.options) {
-		m.cursor = 0
+	m.optionCursor += delta
+	if m.optionCursor < 0 {
+		m.optionCursor = len(m.options) - 1
+	} else if m.optionCursor >= len(m.options) {
+		m.optionCursor = 0
 	}
-}
-
-func (m *MainMenu) View() string {
-	s := "TicTacToe Online\n\n"
-	for i, option := range m.options {
-		if i == m.cursor {
-			s += fmt.Sprintf("[%s]\n", option.Name)
-		} else {
-			s += fmt.Sprintf(" %s \n", option.Name)
-		}
-	}
-	return s
 }

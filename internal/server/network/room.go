@@ -4,7 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/gorilla/websocket"
-	"github.com/sokmontrey/TicTacToeTuiOnline/internal/server/serverGame"
+	"github.com/sokmontrey/TicTacToeTuiOnline/internal/game"
 	"github.com/sokmontrey/TicTacToeTuiOnline/pkg"
 	"sync"
 )
@@ -15,7 +15,7 @@ type Room struct {
 	clients    map[int]*Client
 	mu         sync.Mutex
 	move       chan ClientMove
-	game       *serverGame.Game
+	game       *game.Game
 }
 
 func NewRoom(numPlayers int, id string) *Room {
@@ -24,7 +24,7 @@ func NewRoom(numPlayers int, id string) *Room {
 		maxPlayers: numPlayers,
 		clients:    make(map[int]*Client),
 		move:       make(chan ClientMove, 10),
-		game:       serverGame.NewGame(numPlayers),
+		game:       game.NewGame(numPlayers),
 	}
 }
 
@@ -65,8 +65,9 @@ func (r *Room) AddClient(conn *websocket.Conn) error {
 		return errors.New("room is full")
 	}
 	clientId := r.CreateClient(conn)
-	payload := pkg.NewPayload(pkg.ServerOkPayload, fmt.Sprintf("Player %d joined the room", clientId))
-	r.globalBroadcast(payload)
+	// TODO: NewOkPayload
+	r.globalBroadcast(pkg.NewPayload(pkg.ServerOkPayload, fmt.Sprintf("Player %d joined the room", clientId)))
+	r.directBroadcast(clientId, pkg.NewJoinedIdPayload(clientId))
 	return nil
 }
 
