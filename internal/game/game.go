@@ -9,6 +9,7 @@ type Game struct {
 	numPlayers int
 	players    map[int]*Player
 	radius     int
+	cameraPos  pkg.Vec2
 }
 
 func NewGame(numPlayers int) *Game {
@@ -16,6 +17,7 @@ func NewGame(numPlayers int) *Game {
 		numPlayers: numPlayers,
 		players:    make(map[int]*Player),
 		radius:     7,
+		cameraPos:  pkg.NewVec2(0, 0),
 	}
 	for i := 1; i <= numPlayers; i++ {
 		g.players[i] = NewPlayer(i, pkg.NewVec2(0, 0))
@@ -51,53 +53,36 @@ func (g *Game) getPlayerMark(playerId int) (rune, rune, rune) {
 	return '|', '$', '|'
 }
 
-func (g *Game) Render(offset int) int {
-	g.clearPrevPlayerPositions(offset)
-	g.renderPlayerPositions(offset)
-	g.clearPrevCells(offset)
-	return offset + g.radius*2 + 1
-}
-
-func (g *Game) renderPlayerPositions(offset int) {
+func (g *Game) Render(lineOffset int) int {
+	g.rasterScan(lineOffset, func(tuiPos, cellPos pkg.Vec2) {
+		g.resetCell(tuiPos)
+	})
 	playerCells := g.getPlayerCells()
-	for y := 0; y < g.radius*2+1; y++ {
-		for x := 0; x < g.radius*2+1; x++ {
-			cellPos := pkg.NewVec2(x, y)
-			id, ok := playerCells[cellPos.Sub(pkg.NewVec2(g.radius, g.radius))]
+	g.rasterScan(lineOffset, func(tuiPos, cellPos pkg.Vec2) {
+		id, ok := playerCells[cellPos]
+		if ok {
 			left, _, right := g.getPlayerMark(id)
-			cellPos = cellPos.DownBy(offset)
-			if ok {
-				g.drawCursor(cellPos, left, right)
-			} else {
-				g.setCell(cellPos, '.')
-			}
+			g.drawCursor(tuiPos, left, right)
+		}
+	})
+	return lineOffset + g.radius*2 + 1
+}
+
+func (g *Game) rasterScan(lineOffset int, f func(tuiPos, cellPos pkg.Vec2)) {
+	for y := 0; y < 2*g.radius+1; y++ {
+		for x := 0; x < 2*g.radius+1; x++ {
+			cellPos := pkg.NewVec2(x-g.radius, y-g.radius)
+			cellPos = cellPos.Add(g.cameraPos)
+			f(pkg.NewVec2(x, y+lineOffset), cellPos)
 		}
 	}
 }
 
-func (g *Game) clearPrevPlayerPositions(offset int) {
-	for y := 0; y < g.radius*2+1; y++ {
-		for x := 0; x < g.radius*2+1; x++ {
-			cellPos := pkg.NewVec2(x, y)
-			cellPos = cellPos.DownBy(offset)
-			g.drawCursor(cellPos, ' ', ' ')
-		}
-	}
-}
-
-func (g *Game) clearPrevCells(offset int) {
-	for y := 0; y < g.radius*2+1; y++ {
-		for x := 0; x < g.radius*2+1; x++ {
-			cellPos := pkg.NewVec2(x, y)
-			cellPos = cellPos.DownBy(offset)
-			cellPos.X = cellPos.X * 2
-			g.setCell(cellPos, '.')
-		}
-	}
-}
-
-func (g *Game) setCell(pos pkg.Vec2, ch rune) {
-	termbox.SetCell(pos.X*2+1, pos.Y, ch, termbox.ColorDefault, termbox.ColorDefault)
+func (g *Game) resetCell(pos pkg.Vec2) {
+	pos.X = pos.X*2 + 1
+	termbox.SetCell(pos.X-1, pos.Y, ' ', termbox.ColorDefault, termbox.ColorDefault)
+	termbox.SetCell(pos.X, pos.Y, '.', termbox.ColorDarkGray, termbox.ColorDefault)
+	termbox.SetCell(pos.X+1, pos.Y, ' ', termbox.ColorDefault, termbox.ColorDefault)
 }
 
 func (g *Game) drawCursor(pos pkg.Vec2, left, right rune) {
