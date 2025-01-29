@@ -1,4 +1,4 @@
-package network
+package lobby
 
 import (
 	"errors"
@@ -40,11 +40,16 @@ func (r *Room) listenForClientsMove() {
 				continue
 			}
 			var globalPayload, directPayload pkg.Payload
-			//if move.moveCode == pkg.MoveCodeConfirm {
-			//	globalPayload, directPayload = r.game.ConfirmPlayer(move.clientId)
-			//} else {
-			globalPayload, directPayload = r.game.MovePlayer(move.clientId, move.moveCode)
-			//}
+			if move.moveCode == pkg.MoveCodeConfirm {
+				if r.IsFull() {
+					globalPayload, directPayload = r.game.ConfirmPlayer(move.clientId)
+				} else {
+					globalPayload = pkg.NewNonePayload()
+					directPayload = pkg.NewPayload(pkg.ServerErrPayload, "Room is not full")
+				}
+			} else {
+				globalPayload, directPayload = r.game.MovePlayer(move.clientId, move.moveCode)
+			}
 			if globalPayload.Type != pkg.NonePayload {
 				r.globalBroadcast(globalPayload)
 			}

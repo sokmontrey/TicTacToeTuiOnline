@@ -56,7 +56,6 @@ func (m *GameRoom) Update(msg pageMsg.PageMsg) Command {
 		m.displayMsg = msg.Data.(string)
 	case pageMsg.ErrMsg:
 		m.displayMsg = "Error: " + msg.Data.(string)
-		return QuitCommand // TODO: handle reconnection
 	case pageMsg.KeyMsg:
 		switch msg.Key {
 		case keyboard.KeyEsc, keyboard.KeyCtrlC:
