@@ -6,8 +6,8 @@ import (
 	"github.com/eiannone/keyboard"
 	"github.com/gorilla/websocket"
 	"github.com/nsf/termbox-go"
+	"github.com/sokmontrey/TicTacToeTuiOnline/internal/client/clientGame"
 	"github.com/sokmontrey/TicTacToeTuiOnline/internal/client/pageMsg"
-	"github.com/sokmontrey/TicTacToeTuiOnline/internal/game"
 	"github.com/sokmontrey/TicTacToeTuiOnline/pkg"
 )
 
@@ -18,7 +18,7 @@ type GameRoom struct {
 	displayMsg  string
 	conn        *websocket.Conn
 	move        chan pkg.Payload
-	game        *game.Game
+	game        *clientGame.Game
 }
 
 func NewGameRoom(pm *PageManager, roomId string) *GameRoom {
@@ -28,7 +28,7 @@ func NewGameRoom(pm *PageManager, roomId string) *GameRoom {
 		roomId:      roomId,
 		displayMsg:  "",
 		move:        make(chan pkg.Payload),
-		game:        game.NewGame(2),
+		game:        clientGame.NewGame(2),
 	}
 }
 

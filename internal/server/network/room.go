@@ -4,7 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/gorilla/websocket"
-	"github.com/sokmontrey/TicTacToeTuiOnline/internal/game"
+	"github.com/sokmontrey/TicTacToeTuiOnline/internal/server/serverGame"
 	"github.com/sokmontrey/TicTacToeTuiOnline/pkg"
 	"sync"
 )
@@ -15,7 +15,7 @@ type Room struct {
 	clients    map[int]*Client
 	mu         sync.Mutex
 	move       chan ClientMove
-	game       *game.Game
+	game       *serverGame.Game
 }
 
 func NewRoom(numPlayers int, id string) *Room {
@@ -24,7 +24,7 @@ func NewRoom(numPlayers int, id string) *Room {
 		maxPlayers: numPlayers,
 		clients:    make(map[int]*Client),
 		move:       make(chan ClientMove, 10),
-		game:       game.NewGame(numPlayers),
+		game:       serverGame.NewGame(numPlayers),
 	}
 }
 
@@ -36,12 +36,15 @@ func (r *Room) listenForClientsMove() {
 	for {
 		for move := range r.move {
 			r.mu.Lock()
-			var globalPayload, directPayload pkg.Payload
-			if move.moveCode == pkg.MoveCodeConfirm {
-				globalPayload, directPayload = r.game.MovePlayer(move.clientId, move.moveCode)
-			} else {
-				globalPayload, directPayload = r.game.ConfirmPlayer(move.clientId)
+			if move.moveCode == pkg.MoveCodeNone {
+				continue
 			}
+			var globalPayload, directPayload pkg.Payload
+			//if move.moveCode == pkg.MoveCodeConfirm {
+			//	globalPayload, directPayload = r.game.ConfirmPlayer(move.clientId)
+			//} else {
+			globalPayload, directPayload = r.game.MovePlayer(move.clientId, move.moveCode)
+			//}
 			if globalPayload.Type != pkg.NonePayload {
 				r.globalBroadcast(globalPayload)
 			}
