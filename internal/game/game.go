@@ -33,6 +33,10 @@ func (g *Game) UpdatePlayerPosition(playerId int, position pkg.Vec2) {
 	g.players[playerId].Position = position
 }
 
+func (g *Game) UpdateCameraPosition(position pkg.Vec2) {
+	g.cameraPos = position
+}
+
 func (g *Game) getPlayerCells() map[pkg.Vec2]int {
 	playerCells := make(map[pkg.Vec2]int)
 	for i, player := range g.players {
@@ -86,8 +90,9 @@ func (g *Game) resetCell(pos pkg.Vec2) {
 }
 
 func (g *Game) drawCursor(pos pkg.Vec2, left, right rune) {
-	termbox.SetCell(pos.X*2, pos.Y, left, termbox.ColorDefault, termbox.ColorDefault)
-	termbox.SetCell(pos.X*2+2, pos.Y, right, termbox.ColorDefault, termbox.ColorDefault)
+	pos.X = pos.X*2 + 1
+	termbox.SetCell(pos.X-1, pos.Y, left, termbox.ColorDefault, termbox.ColorDefault)
+	termbox.SetCell(pos.X+1, pos.Y, right, termbox.ColorDefault, termbox.ColorDefault)
 }
 
 // ============================================================================

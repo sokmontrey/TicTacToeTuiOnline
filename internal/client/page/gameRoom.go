@@ -71,6 +71,9 @@ func (m *GameRoom) Update(msg pageMsg.PageMsg) Command {
 		playerId := msg.PlayerId
 		position := msg.Position
 		m.game.UpdatePlayerPosition(playerId, position)
+		if playerId == m.playerId {
+			m.game.UpdateCameraPosition(position)
+		}
 		return NoneCommand
 	}
 	return NoneCommand
