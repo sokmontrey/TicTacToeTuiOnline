@@ -36,7 +36,12 @@ func (r *Room) listenForClientsMove() {
 	for {
 		for move := range r.move {
 			r.mu.Lock()
-			globalPayload, directPayload := r.game.UpdateState(move.clientId, move.moveCode)
+			var globalPayload, directPayload pkg.Payload
+			if move.moveCode == pkg.MoveCodeConfirm {
+				globalPayload, directPayload = r.game.MovePlayer(move.clientId, move.moveCode)
+			} else {
+				globalPayload, directPayload = r.game.ConfirmPlayer(move.clientId)
+			}
 			if globalPayload.Type != pkg.NonePayload {
 				r.globalBroadcast(globalPayload)
 			}
@@ -67,7 +72,7 @@ func (r *Room) AddClient(conn *websocket.Conn) error {
 	clientId := r.CreateClient(conn)
 	// TODO: NewOkPayload
 	r.globalBroadcast(pkg.NewPayload(pkg.ServerOkPayload, fmt.Sprintf("Player %d joined the room", clientId)))
-	r.directBroadcast(clientId, pkg.NewJoinedIdPayload(clientId))
+	r.directBroadcast(clientId, pkg.NewJoinedIdPayload(clientId)) // TODO: sync payload
 	return nil
 }
 

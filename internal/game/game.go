@@ -99,7 +99,11 @@ func (g *Game) drawCursor(pos pkg.Vec2, left, right rune) {
 // Server Related Functions
 // ============================================================================
 
-func (g *Game) UpdateState(playerId int, moveCode pkg.MoveCode) (global pkg.Payload, direct pkg.Payload) {
+func (g *Game) ConfirmPlayer(playerId int) (global pkg.Payload, direct pkg.Payload) {
+	return pkg.NewNonePayload(), pkg.NewNonePayload()
+}
+
+func (g *Game) MovePlayer(playerId int, moveCode pkg.MoveCode) (global pkg.Payload, direct pkg.Payload) {
 	player := g.players[playerId]
 	moveFunc, ok := map[pkg.MoveCode]func() pkg.Vec2{
 		pkg.MoveCodeUp:    player.MoveUp,
