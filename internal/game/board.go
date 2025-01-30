@@ -23,3 +23,22 @@ func (b *Board) GetCell(position pkg.Vec2) int {
 func (b *Board) SetCell(position pkg.Vec2, value int) {
 	b.cells[position] = value
 }
+
+func (b *Board) IsAdjacent(position pkg.Vec2) bool {
+	for dy := -1; dy <= 1; dy++ {
+		for dx := -1; dx <= 1; dx++ {
+			if dx == 0 && dy == 0 {
+				continue
+			}
+			newPos := position.Add(pkg.NewVec2(dx, dy))
+			if b.GetCell(newPos) != -1 {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+func (b *Board) IsEmpty() bool {
+	return len(b.cells) == 0
+}
