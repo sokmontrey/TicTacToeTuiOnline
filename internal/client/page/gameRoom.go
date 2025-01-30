@@ -39,12 +39,17 @@ func (m *GameRoom) Init() {
 }
 
 func (m *GameRoom) Render() {
-	currentTurn := m.game.GetCurrentTurn()
-	currentTurnMark := m.game.GetPlayerMark(currentTurn)
 
 	pkg.TUIWriteText(0, "TicTacToeTui")
 	pkg.TUIWriteText(1, fmt.Sprintf("Room id: %s", m.roomId))
-	pkg.TUIWriteText(2, fmt.Sprintf("Turn: %s", string(currentTurnMark)))
+	currentTurn := m.game.GetCurrentTurn()
+	if currentTurn == m.playerId {
+		pkg.TUIWriteText(2, "Your turn!")
+	} else {
+		currentTurnMark := m.game.GetPlayerMark(currentTurn)
+		bracket := m.game.GetPlayerCursor(currentTurn)
+		pkg.TUIWriteText(2, fmt.Sprintf("Turn: %c%c%c", bracket.Left, currentTurnMark, bracket.Right))
+	}
 	pkg.TUIWriteText(3, m.displayMsg)
 	m.game.Render(4)
 	termbox.Flush()

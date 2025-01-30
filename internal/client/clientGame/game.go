@@ -7,8 +7,8 @@ import (
 )
 
 type PlayerBracket struct {
-	left  rune
-	right rune
+	Left  rune
+	Right rune
 }
 
 type PlayerMark rune
@@ -94,7 +94,7 @@ func (g *Game) Render(lineOffset int) int {
 		id, ok := playerCells[cellPos]
 		if ok {
 			mark := g.GetPlayerCursor(id)
-			g.drawCursor(tuiPos, mark.left, mark.right)
+			g.drawCursor(tuiPos, mark.Left, mark.Right)
 		}
 	})
 	g.rasterScan(lineOffset, func(tuiPos, cellPos pkg.Vec2) {
