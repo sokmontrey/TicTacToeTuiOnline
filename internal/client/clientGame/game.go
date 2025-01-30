@@ -87,7 +87,11 @@ func (g *Game) GetPlayerMark(playerId int) PlayerMark {
 
 func (g *Game) Render(lineOffset int) int {
 	g.rasterScan(lineOffset, func(tuiPos, cellPos pkg.Vec2) {
-		g.clearCell(tuiPos)
+		if cellPos == pkg.NewVec2(0, 0) {
+			g.clearCell(tuiPos, '+')
+		} else {
+			g.clearCell(tuiPos, '.')
+		}
 	})
 	playerCells := g.getPlayerCells()
 	g.rasterScan(lineOffset, func(tuiPos, cellPos pkg.Vec2) {
@@ -117,10 +121,10 @@ func (g *Game) rasterScan(lineOffset int, f func(tuiPos, cellPos pkg.Vec2)) {
 	}
 }
 
-func (g *Game) clearCell(pos pkg.Vec2) {
+func (g *Game) clearCell(pos pkg.Vec2, mark rune) {
 	pos.X = pos.X*2 + 1
 	termbox.SetCell(pos.X-1, pos.Y, ' ', termbox.ColorDefault, termbox.ColorDefault)
-	termbox.SetCell(pos.X, pos.Y, '.', termbox.ColorDarkGray, termbox.ColorDefault)
+	termbox.SetCell(pos.X, pos.Y, mark, termbox.ColorDarkGray, termbox.ColorDefault)
 	termbox.SetCell(pos.X+1, pos.Y, ' ', termbox.ColorDefault, termbox.ColorDefault)
 }
 
