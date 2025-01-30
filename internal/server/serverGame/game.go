@@ -41,13 +41,16 @@ func (g *Game) MovePlayer(playerId int, moveCode pkg.MoveCode) (global pkg.Paylo
 }
 
 func (g *Game) ConfirmPlayer(playerId int) (global pkg.Payload, direct pkg.Payload) {
+	player := g.players[playerId]
 	if g.currentTurn != playerId {
 		return pkg.NewNonePayload(), pkg.NewPayload(pkg.ServerErrPayload, "Not your turn!")
 	}
-	player := g.players[playerId]
-	g.board.SetCell(player.Position, player.Id)
+	if g.board.GetCell(player.Position) != -1 {
+		return pkg.NewNonePayload(), pkg.NewPayload(pkg.ServerErrPayload, "Cell is already taken!")
+	}
+	g.board.SetCell(player.Position, playerId)
 	g.updateTurn()
-	return pkg.NewBoardUpdatePayload(player.Position, player.Id, g.currentTurn), pkg.NewNonePayload()
+	return pkg.NewBoardUpdatePayload(player.Position, playerId, g.currentTurn), pkg.NewNonePayload()
 }
 
 func (g *Game) updateTurn() {
