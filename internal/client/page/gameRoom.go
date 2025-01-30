@@ -28,7 +28,7 @@ func NewGameRoom(pm *PageManager, roomId string) *GameRoom {
 		roomId:      roomId,
 		displayMsg:  "",
 		move:        make(chan pkg.Payload),
-		game:        clientGame.NewGame(2),
+		game:        clientGame.NewGame(1),
 	}
 }
 
@@ -136,7 +136,8 @@ func (m *GameRoom) connectAndListenToServer() {
 		case pkg.ServerJoinedIdPayload:
 			var joinedId int
 			json.Unmarshal(payload.Data, &joinedId)
-			m.pageManager.msg <- pageMsg.NewJoinedIdMsg(joinedId)
+			m.pageManager.msg <- pageMsg.NewJoinedIdMsg(joinedId) // TODO: sync msg and payload instead of join
+			// use join for new player joined the game
 		case pkg.ServerBoardUpdatePayload:
 			var boardUpdate pkg.BoardUpdate
 			json.Unmarshal(payload.Data, &boardUpdate)
