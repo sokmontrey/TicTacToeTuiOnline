@@ -29,6 +29,7 @@ func NewGame(numPlayers int) *Game {
 		radius:      7,
 		currentTurn: 1,
 		cameraPos:   pkg.NewVec2(0, 0),
+		board:       game.NewBoard(),
 	}
 	for i := 1; i <= numPlayers; i++ {
 		g.players[i] = game.NewPlayer(i, pkg.NewVec2(0, 0))
@@ -60,7 +61,7 @@ func (g *Game) getPlayerCells() map[pkg.Vec2]int {
 	return playerCells
 }
 
-func (g *Game) getPlayerCursor(playerId int) PlayerBracket {
+func (g *Game) GetPlayerCursor(playerId int) PlayerBracket {
 	var mapIdToMark = map[int]PlayerBracket{
 		1: {'[', ']'},
 		2: {'(', ')'},
@@ -72,7 +73,7 @@ func (g *Game) getPlayerCursor(playerId int) PlayerBracket {
 	return PlayerBracket{'|', '|'}
 }
 
-func (g *Game) getPlayerMark(playerId int) PlayerMark {
+func (g *Game) GetPlayerMark(playerId int) PlayerMark {
 	var mapIdToMark = map[int]PlayerMark{
 		1: 'X',
 		2: 'O',
@@ -86,14 +87,21 @@ func (g *Game) getPlayerMark(playerId int) PlayerMark {
 
 func (g *Game) Render(lineOffset int) int {
 	g.rasterScan(lineOffset, func(tuiPos, cellPos pkg.Vec2) {
-		g.resetCell(tuiPos)
+		g.clearCell(tuiPos)
 	})
 	playerCells := g.getPlayerCells()
 	g.rasterScan(lineOffset, func(tuiPos, cellPos pkg.Vec2) {
 		id, ok := playerCells[cellPos]
 		if ok {
-			mark := g.getPlayerCursor(id)
+			mark := g.GetPlayerCursor(id)
 			g.drawCursor(tuiPos, mark.left, mark.right)
+		}
+	})
+	g.rasterScan(lineOffset, func(tuiPos, cellPos pkg.Vec2) {
+		cellId := g.board.GetCell(cellPos)
+		if cellId != -1 {
+			mark := g.GetPlayerMark(cellId)
+			g.drawCell(tuiPos, rune(mark))
 		}
 	})
 	return lineOffset + g.radius*2 + 1
@@ -109,7 +117,7 @@ func (g *Game) rasterScan(lineOffset int, f func(tuiPos, cellPos pkg.Vec2)) {
 	}
 }
 
-func (g *Game) resetCell(pos pkg.Vec2) {
+func (g *Game) clearCell(pos pkg.Vec2) {
 	pos.X = pos.X*2 + 1
 	termbox.SetCell(pos.X-1, pos.Y, ' ', termbox.ColorDefault, termbox.ColorDefault)
 	termbox.SetCell(pos.X, pos.Y, '.', termbox.ColorDarkGray, termbox.ColorDefault)
@@ -120,4 +128,13 @@ func (g *Game) drawCursor(pos pkg.Vec2, left, right rune) {
 	pos.X = pos.X*2 + 1
 	termbox.SetCell(pos.X-1, pos.Y, left, termbox.ColorDefault, termbox.ColorDefault)
 	termbox.SetCell(pos.X+1, pos.Y, right, termbox.ColorDefault, termbox.ColorDefault)
+}
+
+func (g *Game) drawCell(pos pkg.Vec2, mark rune) {
+	pos.X = pos.X*2 + 1
+	termbox.SetCell(pos.X, pos.Y, mark, termbox.ColorDefault, termbox.ColorDefault)
+}
+
+func (g *Game) GetCurrentTurn() int {
+	return g.currentTurn
 }

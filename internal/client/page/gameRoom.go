@@ -39,10 +39,14 @@ func (m *GameRoom) Init() {
 }
 
 func (m *GameRoom) Render() {
+	currentTurn := m.game.GetCurrentTurn()
+	currentTurnMark := m.game.GetPlayerMark(currentTurn)
+
 	pkg.TUIWriteText(0, "TicTacToeTui")
 	pkg.TUIWriteText(1, fmt.Sprintf("Room id: %s", m.roomId))
-	nextLine := m.game.Render(2)
-	pkg.TUIWriteText(nextLine, m.displayMsg)
+	pkg.TUIWriteText(2, fmt.Sprintf("Turn: %s", string(currentTurnMark)))
+	pkg.TUIWriteText(3, m.displayMsg)
+	m.game.Render(4)
 	termbox.Flush()
 }
 

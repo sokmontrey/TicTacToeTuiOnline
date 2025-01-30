@@ -13,7 +13,11 @@ func NewBoard() *Board {
 }
 
 func (b *Board) GetCell(position pkg.Vec2) int {
-	return b.cells[position]
+	cell, ok := b.cells[position]
+	if !ok {
+		return -1
+	}
+	return cell
 }
 
 func (b *Board) SetCell(position pkg.Vec2, value int) {
