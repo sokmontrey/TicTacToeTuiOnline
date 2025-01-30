@@ -1,7 +1,6 @@
 package serverGame
 
 import (
-	"fmt"
 	"github.com/sokmontrey/TicTacToeTuiOnline/internal/game"
 	"github.com/sokmontrey/TicTacToeTuiOnline/pkg"
 )
@@ -10,6 +9,7 @@ type Game struct {
 	numPlayers  int
 	players     map[int]*game.Player
 	currentTurn int
+	board       *game.Board
 }
 
 func NewGame(numPlayers int) *Game {
@@ -17,6 +17,7 @@ func NewGame(numPlayers int) *Game {
 		numPlayers:  numPlayers,
 		players:     make(map[int]*game.Player),
 		currentTurn: 1,
+		board:       game.NewBoard(),
 	}
 	for i := 1; i <= numPlayers; i++ {
 		g.players[i] = game.NewPlayer(i, pkg.NewVec2(0, 0))
@@ -43,8 +44,10 @@ func (g *Game) ConfirmPlayer(playerId int) (global pkg.Payload, direct pkg.Paylo
 	if g.currentTurn != playerId {
 		return pkg.NewNonePayload(), pkg.NewPayload(pkg.ServerErrPayload, "Not your turn!")
 	}
+	player := g.players[playerId]
+	g.board.SetCell(player.Position, player.Id)
 	g.updateTurn()
-	return pkg.NewPayload(pkg.ServerOkPayload, fmt.Sprintf("Turn %d", g.currentTurn)), pkg.NewNonePayload()
+	return pkg.NewBoardUpdatePayload(player.Position, player.Id, g.currentTurn), pkg.NewNonePayload()
 }
 
 func (g *Game) updateTurn() {

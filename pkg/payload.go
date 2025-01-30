@@ -16,12 +16,18 @@ type PositionUpdate struct {
 	Position Vec2 `json:"position"`
 }
 
+type BoardUpdate struct {
+	CellPos  Vec2 `json:"cellPos"`
+	CellId   int  `json:"cellId"`
+	NextTurn int  `json:"nextTurn"`
+}
+
 const (
 	ServerErrPayload PayloadType = iota
 	ServerOkPayload
 	ServerJoinedIdPayload
 	ServerPositionPayload
-	//ServerBoardUpdatePayload
+	ServerBoardUpdatePayload
 	ClientMovePayload
 	NonePayload
 )
@@ -67,6 +73,14 @@ func NewJoinedIdPayload(playerId int) Payload {
 
 func NewPositionUpdatePayload(playerId int, position Vec2) Payload {
 	return NewPayload(ServerPositionPayload, PositionUpdate{playerId, position})
+}
+
+func NewBoardUpdatePayload(cellPos Vec2, cellId int, nextTurn int) Payload {
+	return NewPayload(ServerBoardUpdatePayload, BoardUpdate{
+		cellPos,
+		cellId,
+		nextTurn,
+	})
 }
 
 func CharToMoveCode(char rune) MoveCode {

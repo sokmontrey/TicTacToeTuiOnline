@@ -7,18 +7,21 @@ import (
 )
 
 type Game struct {
-	numPlayers int
-	players    map[int]*game.Player
-	radius     int
-	cameraPos  pkg.Vec2
+	numPlayers  int
+	players     map[int]*game.Player
+	radius      int
+	currentTurn int
+	cameraPos   pkg.Vec2
+	board       *game.Board
 }
 
 func NewGame(numPlayers int) *Game {
 	g := &Game{
-		numPlayers: numPlayers,
-		players:    make(map[int]*game.Player),
-		radius:     7,
-		cameraPos:  pkg.NewVec2(0, 0),
+		numPlayers:  numPlayers,
+		players:     make(map[int]*game.Player),
+		radius:      7,
+		currentTurn: 1,
+		cameraPos:   pkg.NewVec2(0, 0),
 	}
 	for i := 1; i <= numPlayers; i++ {
 		g.players[i] = game.NewPlayer(i, pkg.NewVec2(0, 0))
@@ -32,6 +35,14 @@ func (g *Game) UpdatePlayerPosition(playerId int, position pkg.Vec2) {
 
 func (g *Game) UpdateCameraPosition(position pkg.Vec2) {
 	g.cameraPos = position
+}
+
+func (g *Game) UpdateBoard(cellPos pkg.Vec2, cellId int) {
+	g.board.SetCell(cellPos, cellId)
+}
+
+func (g *Game) UpdateTurn(nextTurn int) {
+	g.currentTurn = nextTurn
 }
 
 func (g *Game) getPlayerCells() map[pkg.Vec2]int {

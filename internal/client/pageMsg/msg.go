@@ -12,14 +12,6 @@ type KeyMsg struct {
 	Key  keyboard.Key
 }
 
-func (k KeyMsg) ToMoveCode() pkg.MoveCode {
-	moveCode := pkg.KeyToMoveCode(k.Key)
-	if moveCode == pkg.MoveCodeNone {
-		moveCode = pkg.CharToMoveCode(k.Char)
-	}
-	return moveCode
-}
-
 type OkMsg struct {
 	Data any
 }
@@ -35,6 +27,20 @@ type PositionMsg struct {
 
 type JoinedIdMsg struct {
 	PlayerId int
+}
+
+type BoardUpdateMsg struct {
+	CellPos  pkg.Vec2
+	CellId   int
+	NextTurn int
+}
+
+func (k KeyMsg) ToMoveCode() pkg.MoveCode {
+	moveCode := pkg.KeyToMoveCode(k.Key)
+	if moveCode == pkg.MoveCodeNone {
+		moveCode = pkg.CharToMoveCode(k.Char)
+	}
+	return moveCode
 }
 
 func NewKeyMsg(char rune, key keyboard.Key) KeyMsg {
@@ -55,4 +61,8 @@ func NewPositionMsg(playerId int, position pkg.Vec2) PositionMsg {
 
 func NewJoinedIdMsg(playerId int) JoinedIdMsg {
 	return JoinedIdMsg{playerId}
+}
+
+func NewBoardUpdateMsg(cellPos pkg.Vec2, cellId int, nextTurn int) BoardUpdateMsg {
+	return BoardUpdateMsg{cellPos, cellId, nextTurn}
 }

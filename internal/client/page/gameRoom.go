@@ -65,7 +65,6 @@ func (m *GameRoom) Update(msg pageMsg.PageMsg) Command {
 		if moveCode != pkg.MoveCodeNone {
 			m.move <- pkg.NewPayload(pkg.ClientMovePayload, moveCode)
 		}
-		return NoneCommand
 	case pageMsg.PositionMsg:
 		playerId := msg.PlayerId
 		position := msg.Position
@@ -73,7 +72,9 @@ func (m *GameRoom) Update(msg pageMsg.PageMsg) Command {
 		if playerId == m.playerId {
 			m.game.UpdateCameraPosition(position)
 		}
-		return NoneCommand
+	case pageMsg.BoardUpdateMsg:
+		m.game.UpdateBoard(msg.CellPos, msg.CellId)
+		m.game.UpdateTurn(msg.NextTurn)
 	}
 	return NoneCommand
 }
@@ -128,7 +129,10 @@ func (m *GameRoom) connectAndListenToServer() {
 			var joinedId int
 			json.Unmarshal(payload.Data, &joinedId)
 			m.pageManager.msg <- pageMsg.NewJoinedIdMsg(joinedId)
+		case pkg.ServerBoardUpdatePayload:
+			var boardUpdate pkg.BoardUpdate
+			json.Unmarshal(payload.Data, &boardUpdate)
+			m.pageManager.msg <- pageMsg.NewBoardUpdateMsg(boardUpdate.CellPos, boardUpdate.CellId, boardUpdate.NextTurn)
 		}
-		// TODO: Game update payload
 	}
 }
