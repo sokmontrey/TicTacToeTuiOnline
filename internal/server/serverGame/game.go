@@ -50,8 +50,7 @@ func (g *Game) ConfirmPlayer(playerId int) (global pkg.Payload, direct pkg.Paylo
 	}
 	if g.board.IsEmpty() && player.Position != pkg.NewVec2(0, 0) {
 		return pkg.NewNonePayload(), pkg.NewPayload(pkg.ServerErrPayload, "Start at the center!")
-	}
-	if !g.board.IsAdjacent(player.Position) {
+	} else if !g.board.IsEmpty() && !g.board.IsAdjacent(player.Position) {
 		return pkg.NewNonePayload(), pkg.NewPayload(pkg.ServerErrPayload, "Too part apart!")
 	}
 	g.board.SetCell(player.Position, playerId)

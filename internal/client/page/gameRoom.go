@@ -39,7 +39,6 @@ func (m *GameRoom) Init() {
 }
 
 func (m *GameRoom) Render() {
-
 	pkg.TUIWriteText(0, "TicTacToeTui")
 	pkg.TUIWriteText(1, fmt.Sprintf("Room id: %s", m.roomId))
 	currentTurn := m.game.GetCurrentTurn()
