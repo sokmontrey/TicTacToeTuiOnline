@@ -6,6 +6,13 @@ import (
 	"github.com/sokmontrey/TicTacToeTuiOnline/pkg"
 )
 
+type PlayerBracket struct {
+	left  rune
+	right rune
+}
+
+type PlayerMark rune
+
 type Game struct {
 	numPlayers  int
 	players     map[int]*game.Player
@@ -53,16 +60,28 @@ func (g *Game) getPlayerCells() map[pkg.Vec2]int {
 	return playerCells
 }
 
-func (g *Game) getPlayerMark(playerId int) (rune, rune, rune) {
-	switch playerId {
-	case 1:
-		return '[', 'X', ']'
-	case 2:
-		return '(', 'O', ')'
-	case 3:
-		return '{', '#', '}'
+func (g *Game) getPlayerCursor(playerId int) PlayerBracket {
+	var mapIdToMark = map[int]PlayerBracket{
+		1: {'[', ']'},
+		2: {'(', ')'},
+		3: {'{', '}'},
 	}
-	return '|', '$', '|'
+	if mark, ok := mapIdToMark[playerId]; ok {
+		return mark
+	}
+	return PlayerBracket{'|', '|'}
+}
+
+func (g *Game) getPlayerMark(playerId int) PlayerMark {
+	var mapIdToMark = map[int]PlayerMark{
+		1: 'X',
+		2: 'O',
+		3: '$',
+	}
+	if mark, ok := mapIdToMark[playerId]; ok {
+		return mark
+	}
+	return '#'
 }
 
 func (g *Game) Render(lineOffset int) int {
@@ -73,8 +92,8 @@ func (g *Game) Render(lineOffset int) int {
 	g.rasterScan(lineOffset, func(tuiPos, cellPos pkg.Vec2) {
 		id, ok := playerCells[cellPos]
 		if ok {
-			left, _, right := g.getPlayerMark(id)
-			g.drawCursor(tuiPos, left, right)
+			mark := g.getPlayerCursor(id)
+			g.drawCursor(tuiPos, mark.left, mark.right)
 		}
 	})
 	return lineOffset + g.radius*2 + 1
