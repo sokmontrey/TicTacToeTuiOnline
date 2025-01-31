@@ -64,3 +64,29 @@ func (g *Game) updateTurn() {
 		g.currentTurn = 1
 	}
 }
+
+func (g *Game) GetAllCells() []pkg.CellUpdate {
+	cellUpdates := make([]pkg.CellUpdate, 0)
+	for pos, cellId := range g.board.GetAllCells() {
+		cellUpdates = append(cellUpdates, pkg.CellUpdate{
+			CellId:  cellId,
+			CellPos: pos,
+		})
+	}
+	return cellUpdates
+}
+
+func (g *Game) GetAllPlayers() []pkg.PlayerUpdate {
+	playerUpdates := make([]pkg.PlayerUpdate, 0)
+	for id, player := range g.players {
+		playerUpdates = append(playerUpdates, pkg.PlayerUpdate{
+			PlayerId: id,
+			Position: player.Position,
+		})
+	}
+	return playerUpdates
+}
+
+func (g *Game) GetCurrentTurn() int {
+	return g.currentTurn
+}

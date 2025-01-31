@@ -11,22 +11,38 @@ type PayloadType byte
 
 type MoveCode byte
 
-type PositionUpdate struct {
+type PlayerUpdate struct {
 	PlayerId int  `json:"playerId"`
 	Position Vec2 `json:"position"`
 }
 
+type CellUpdate struct {
+	CellPos Vec2 `json:"cellPos"`
+	CellId  int  `json:"cellId"`
+}
+
 type BoardUpdate struct {
-	CellPos  Vec2 `json:"cellPos"`
-	CellId   int  `json:"cellId"`
-	NextTurn int  `json:"nextTurn"`
+	Cell     CellUpdate `json:"cell"`
+	NextTurn int        `json:"nextTurn"`
+}
+
+type SyncUpdate struct {
+	PlayerPositions []PlayerUpdate `json:"playerPositions"`
+	CellPositions   []CellUpdate   `json:"cellPositions"`
+	CurrentTurn     int            `json:"currentTurn"`
+	CurrentPlayerId int            `json:"currentPlayerId"`
+}
+
+type JoinedUpdate struct {
+	PlayerId int `json:"playerId"`
 }
 
 const (
 	ServerErrPayload PayloadType = iota
 	ServerOkPayload
-	ServerJoinedIdPayload
+	ServerSyncPayload
 	ServerPositionPayload
+	ServerJoinedPayload
 	ServerBoardUpdatePayload
 	ClientMovePayload
 	NonePayload
@@ -67,19 +83,36 @@ func NewNonePayload() Payload {
 	return NewPayload(NonePayload, nil)
 }
 
-func NewJoinedIdPayload(playerId int) Payload {
-	return NewPayload(ServerJoinedIdPayload, playerId)
+func NewSyncPayload(playerPositions []PlayerUpdate,
+	cellPositions []CellUpdate,
+	currentTurn int,
+	currentPlayerId int,
+) Payload {
+	return NewPayload(ServerSyncPayload, SyncUpdate{
+		PlayerPositions: playerPositions,
+		CellPositions:   cellPositions,
+		CurrentTurn:     currentTurn,
+		CurrentPlayerId: currentPlayerId,
+	})
 }
 
 func NewPositionUpdatePayload(playerId int, position Vec2) Payload {
-	return NewPayload(ServerPositionPayload, PositionUpdate{playerId, position})
+	return NewPayload(ServerPositionPayload, PlayerUpdate{playerId, position})
+}
+
+func NewJoinedUpdatePayload(playerId int) Payload {
+	return NewPayload(ServerJoinedPayload, JoinedUpdate{
+		PlayerId: playerId,
+	})
 }
 
 func NewBoardUpdatePayload(cellPos Vec2, cellId int, nextTurn int) Payload {
 	return NewPayload(ServerBoardUpdatePayload, BoardUpdate{
-		cellPos,
-		cellId,
-		nextTurn,
+		Cell: CellUpdate{
+			CellPos: cellPos,
+			CellId:  cellId,
+		},
+		NextTurn: nextTurn,
 	})
 }
 

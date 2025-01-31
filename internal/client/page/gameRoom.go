@@ -57,9 +57,20 @@ func (m *GameRoom) Render() {
 func (m *GameRoom) Update(msg pageMsg.PageMsg) Command {
 	m.displayMsg = ""
 	switch msg := msg.(type) {
-	case pageMsg.JoinedIdMsg:
-		m.playerId = msg.PlayerId
-		return NoneCommand
+	case pageMsg.JoinedMsg:
+		m.displayMsg = fmt.Sprintf("Player %d joined", msg.PlayerId)
+	case pageMsg.SyncMsg:
+		m.playerId = msg.CurrentPlayerId
+		for _, p := range msg.PlayerPositions {
+			m.game.UpdatePlayerPosition(p.PlayerId, p.Position)
+			if p.PlayerId == m.playerId {
+				m.game.UpdateCameraPosition(p.Position)
+			}
+		}
+		for _, c := range msg.CellPositions {
+			m.game.UpdateBoard(c.CellPos, c.CellId)
+		}
+		m.game.UpdateTurn(msg.CurrentTurn)
 	case pageMsg.OkMsg:
 		m.displayMsg = msg.Data.(string)
 	case pageMsg.ErrMsg:
@@ -73,7 +84,7 @@ func (m *GameRoom) Update(msg pageMsg.PageMsg) Command {
 		if moveCode != pkg.MoveCodeNone {
 			m.move <- pkg.NewPayload(pkg.ClientMovePayload, moveCode)
 		}
-	case pageMsg.PositionMsg:
+	case pageMsg.PlayerPositionMsg:
 		playerId := msg.PlayerId
 		position := msg.Position
 		m.game.UpdatePlayerPosition(playerId, position)
@@ -122,26 +133,40 @@ func (m *GameRoom) connectAndListenToServer() {
 		if err != nil {
 			m.pageManager.msg <- pageMsg.NewErrMsg("Unable to parse server response")
 		}
-		var msgStr string
-		json.Unmarshal(payload.Data, &msgStr)
 		switch payload.Type {
+		case pkg.ServerJoinedPayload:
+			var joinedUpdate pkg.JoinedUpdate
+			json.Unmarshal(payload.Data, &joinedUpdate)
+			m.pageManager.msg <- pageMsg.NewJoinedMsg(joinedUpdate.PlayerId)
 		case pkg.ServerErrPayload:
+			var msgStr string
+			json.Unmarshal(payload.Data, &msgStr)
 			m.pageManager.msg <- pageMsg.NewErrMsg(msgStr)
 		case pkg.ServerOkPayload:
+			var msgStr string
+			json.Unmarshal(payload.Data, &msgStr)
 			m.pageManager.msg <- pageMsg.NewOkMsg(msgStr)
 		case pkg.ServerPositionPayload:
-			var positionUpdate pkg.PositionUpdate
+			var positionUpdate pkg.PlayerUpdate
 			json.Unmarshal(payload.Data, &positionUpdate)
 			m.pageManager.msg <- pageMsg.NewPositionMsg(positionUpdate.PlayerId, positionUpdate.Position)
-		case pkg.ServerJoinedIdPayload:
-			var joinedId int
-			json.Unmarshal(payload.Data, &joinedId)
-			m.pageManager.msg <- pageMsg.NewJoinedIdMsg(joinedId) // TODO: sync msg and payload instead of join
-			// use join for new player joined the game
+		case pkg.ServerSyncPayload:
+			var syncData pkg.SyncUpdate
+			json.Unmarshal(payload.Data, &syncData)
+			m.pageManager.msg <- pageMsg.NewSyncMsg( // TODO; for each of these, pass payload data directly
+				syncData.PlayerPositions,
+				syncData.CellPositions,
+				syncData.CurrentTurn,
+				syncData.CurrentPlayerId,
+			)
 		case pkg.ServerBoardUpdatePayload:
 			var boardUpdate pkg.BoardUpdate
 			json.Unmarshal(payload.Data, &boardUpdate)
-			m.pageManager.msg <- pageMsg.NewBoardUpdateMsg(boardUpdate.CellPos, boardUpdate.CellId, boardUpdate.NextTurn)
+			m.pageManager.msg <- pageMsg.NewBoardUpdateMsg(
+				boardUpdate.Cell.CellPos,
+				boardUpdate.Cell.CellId,
+				boardUpdate.NextTurn,
+			)
 		}
 	}
 }

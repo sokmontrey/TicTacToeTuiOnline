@@ -12,6 +12,10 @@ type KeyMsg struct {
 	Key  keyboard.Key
 }
 
+type JoinedMsg struct {
+	PlayerId int
+}
+
 type OkMsg struct {
 	Data any
 }
@@ -20,13 +24,18 @@ type ErrMsg struct {
 	Data any
 }
 
-type PositionMsg struct {
+// TODO reuse payload type here
+
+type PlayerPositionMsg struct {
 	PlayerId int
 	Position pkg.Vec2
 }
 
-type JoinedIdMsg struct {
-	PlayerId int
+type SyncMsg struct {
+	PlayerPositions []pkg.PlayerUpdate
+	CellPositions   []pkg.CellUpdate
+	CurrentTurn     int
+	CurrentPlayerId int
 }
 
 type BoardUpdateMsg struct {
@@ -55,14 +64,34 @@ func NewErrMsg(data any) ErrMsg {
 	return ErrMsg{data}
 }
 
-func NewPositionMsg(playerId int, position pkg.Vec2) PositionMsg {
-	return PositionMsg{playerId, position}
-}
-
-func NewJoinedIdMsg(playerId int) JoinedIdMsg {
-	return JoinedIdMsg{playerId}
+func NewPositionMsg(playerId int, position pkg.Vec2) PlayerPositionMsg {
+	return PlayerPositionMsg{playerId, position}
 }
 
 func NewBoardUpdateMsg(cellPos pkg.Vec2, cellId int, nextTurn int) BoardUpdateMsg {
-	return BoardUpdateMsg{cellPos, cellId, nextTurn}
+	return BoardUpdateMsg{
+		CellPos:  cellPos,
+		CellId:   cellId,
+		NextTurn: nextTurn,
+	}
+}
+
+func NewJoinedMsg(playerId int) JoinedMsg {
+	return JoinedMsg{
+		PlayerId: playerId,
+	}
+}
+
+func NewSyncMsg(
+	playerPositions []pkg.PlayerUpdate,
+	cellPositions []pkg.CellUpdate,
+	currentTurn int,
+	currentPlayerId int,
+) SyncMsg {
+	return SyncMsg{
+		PlayerPositions: playerPositions,
+		CellPositions:   cellPositions,
+		CurrentTurn:     currentTurn,
+		CurrentPlayerId: currentPlayerId,
+	}
 }

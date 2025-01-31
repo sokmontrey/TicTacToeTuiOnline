@@ -31,17 +31,16 @@ func NewGame(numPlayers int) *Game {
 		cameraPos:   pkg.NewVec2(0, 0),
 		board:       game.NewBoard(),
 	}
-	g.players[1] = game.NewPlayer(1, pkg.NewVec2(1, 0))
 	return g
 }
 
-func (g *Game) AddNewPlayer() {
-	playerId := len(g.players) + 1
-	g.players[playerId] = game.NewPlayer(playerId, pkg.NewVec2(playerId, 0))
-}
-
 func (g *Game) UpdatePlayerPosition(playerId int, position pkg.Vec2) {
-	g.players[playerId].Position = position
+	player, ok := g.players[playerId]
+	if !ok {
+		g.players[playerId] = game.NewPlayer(playerId, position)
+		return
+	}
+	player.Position = position
 }
 
 func (g *Game) UpdateCameraPosition(position pkg.Vec2) {

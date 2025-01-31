@@ -42,3 +42,7 @@ func (b *Board) IsAdjacent(position pkg.Vec2) bool {
 func (b *Board) IsEmpty() bool {
 	return len(b.cells) == 0
 }
+
+func (b *Board) GetAllCells() map[pkg.Vec2]int {
+	return b.cells
+}

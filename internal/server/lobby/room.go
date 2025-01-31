@@ -78,9 +78,15 @@ func (r *Room) AddClient(conn *websocket.Conn) error {
 		return errors.New("room is full")
 	}
 	clientId := r.CreateClient(conn)
-	// TODO: NewOkPayload
-	r.globalBroadcast(pkg.NewPayload(pkg.ServerOkPayload, fmt.Sprintf("Player %d joined the room", clientId)))
-	r.directBroadcast(clientId, pkg.NewJoinedIdPayload(clientId)) // TODO: sync payload
+	r.globalBroadcast(pkg.NewJoinedUpdatePayload(clientId))
+	r.directBroadcast(clientId,
+		pkg.NewSyncPayload(
+			r.game.GetAllPlayers(),
+			r.game.GetAllCells(),
+			r.game.GetCurrentTurn(),
+			clientId,
+		),
+	)
 	return nil
 }
 
