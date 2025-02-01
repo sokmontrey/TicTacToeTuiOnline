@@ -103,8 +103,8 @@ func (r *Room) RemoveClient(clientId int) {
 	defer r.mu.Unlock()
 	delete(r.clients, clientId)
 	str := fmt.Sprintf("Player %d left the room", clientId)
-	payload := payload.NewPayload(payload.ServerOkPayload, str)
-	r.globalBroadcast(payload)
+	r.globalBroadcast(payload.NewOkPayload(str)) // TODO: left payload
+	//TODO: if room is empty, countdown to delete
 }
 
 // ============================================================================
