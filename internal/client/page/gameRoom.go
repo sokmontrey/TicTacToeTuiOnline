@@ -44,14 +44,16 @@ func (m *GameRoom) Render() {
 	pkg.TUIWriteText(1, fmt.Sprintf("Room id: %s", m.roomId))
 	currentTurn := m.game.GetCurrentTurn()
 	if currentTurn == m.playerId {
-		pkg.TUIWriteText(2, "Your turn!")
+		pkg.TUIWriteTextWithColor(3, "Your turn!", termbox.ColorGreen)
 	} else {
 		currentTurnMark := m.game.GetPlayerMark(currentTurn)
 		bracket := m.game.GetPlayerCursor(currentTurn)
-		pkg.TUIWriteText(2, fmt.Sprintf("Turn: %c%c%c", bracket.Left, currentTurnMark, bracket.Right))
+		color := m.game.GetPlayerColor(currentTurn)
+		symbol := fmt.Sprintf("Turn: %c%c%c", bracket.Left, currentTurnMark, bracket.Right)
+		pkg.TUIWriteTextWithColor(3, symbol, color)
 	}
-	pkg.TUIWriteText(3, m.displayMsg)
-	m.game.Render(4)
+	pkg.TUIWriteTextWithColor(4, m.displayMsg, termbox.ColorRed)
+	m.game.Render(6)
 	termbox.Flush()
 }
 

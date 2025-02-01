@@ -1,5 +1,7 @@
 package pkg
 
+import "math"
+
 type Vec2 struct {
 	X int
 	Y int
@@ -51,4 +53,16 @@ func (v Vec2) LeftBy(unit int) Vec2 {
 
 func (v Vec2) RightBy(unit int) Vec2 {
 	return Vec2{v.X + unit, v.Y}
+}
+
+func (v Vec2) Magnitude() int {
+	return int(math.Sqrt(float64(v.X*v.X + v.Y*v.Y)))
+}
+
+func (v Vec2) Normalize() Vec2 {
+	mag := v.Magnitude()
+	return Vec2{
+		int(math.Round(float64(v.X) / float64(mag))),
+		int(math.Round(float64(v.Y) / float64(mag))),
+	}
 }

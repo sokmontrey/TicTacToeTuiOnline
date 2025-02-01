@@ -17,6 +17,7 @@ type Game struct {
 	numPlayers     int
 	players        map[int]*game.Player
 	radius         int
+	padding        int
 	currentTurn    int
 	cameraPos      pkg.Vec2
 	board          *game.Board
@@ -27,7 +28,8 @@ func NewGame(numPlayers int) *Game {
 	g := &Game{
 		numPlayers:     numPlayers,
 		players:        make(map[int]*game.Player),
-		radius:         7,
+		radius:         13,
+		padding:        1,
 		currentTurn:    1,
 		cameraPos:      pkg.NewVec2(0, 0),
 		board:          game.NewBoard(),
@@ -53,7 +55,10 @@ func (g *Game) UpdateConnectedCells(connectedCells map[pkg.Vec2]struct{}) {
 }
 
 func (g *Game) UpdateCameraPosition(position pkg.Vec2) {
-	g.cameraPos = position
+	dir := position.Sub(g.cameraPos)
+	if dir.Magnitude() > g.radius-g.padding {
+		g.cameraPos = g.cameraPos.Add(dir.Normalize())
+	}
 }
 
 func (g *Game) UpdateBoard(cellPos pkg.Vec2, cellId int) {
@@ -147,27 +152,32 @@ func (g *Game) rasterScan(lineOffset int, f func(tuiPos, cellPos pkg.Vec2)) {
 	for y := 0; y < 2*g.radius+1; y++ {
 		for x := 0; x < 2*g.radius+1; x++ {
 			cellPos := pkg.NewVec2(x-g.radius, y-g.radius)
-			cellPos = cellPos.Add(g.cameraPos)
-			f(pkg.NewVec2(x, y+lineOffset), cellPos)
+			if cellPos.Magnitude() <= g.radius {
+				tuiPos := pkg.NewVec2(x, y+lineOffset)
+				f(tuiPos, cellPos.Add(g.cameraPos))
+			}
 		}
 	}
 }
 
 func (g *Game) clearCell(pos pkg.Vec2, mark rune, color termbox.Attribute) {
-	pos.X = pos.X*2 + 1
+	w, _ := termbox.Size()
+	pos.X = pos.X*2 + 1 + w/2 - g.radius*2
 	termbox.SetCell(pos.X-1, pos.Y, ' ', color, termbox.ColorDefault)
 	termbox.SetCell(pos.X, pos.Y, mark, color, termbox.ColorDefault)
 	termbox.SetCell(pos.X+1, pos.Y, ' ', color, termbox.ColorDefault)
 }
 
 func (g *Game) drawCursor(pos pkg.Vec2, left, right rune, color termbox.Attribute) {
-	pos.X = pos.X*2 + 1
+	w, _ := termbox.Size()
+	pos.X = pos.X*2 + 1 + w/2 - g.radius*2
 	termbox.SetCell(pos.X-1, pos.Y, left, color, termbox.ColorDefault)
 	termbox.SetCell(pos.X+1, pos.Y, right, color, termbox.ColorDefault)
 }
 
 func (g *Game) drawCell(pos pkg.Vec2, mark rune, color termbox.Attribute) {
-	pos.X = pos.X*2 + 1
+	w, _ := termbox.Size()
+	pos.X = pos.X*2 + 1 + w/2 - g.radius*2
 	termbox.SetCell(pos.X, pos.Y, mark, color, termbox.ColorDefault)
 }
 
