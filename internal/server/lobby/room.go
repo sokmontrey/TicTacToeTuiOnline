@@ -1,7 +1,6 @@
 package lobby
 
 import (
-	"errors"
 	"fmt"
 	"github.com/gorilla/websocket"
 	"github.com/sokmontrey/TicTacToeTuiOnline/internal/server/serverGame"
@@ -72,13 +71,13 @@ func (r *Room) globalBroadcast(payload payload.RawPayload) {
 	}
 }
 
-func (r *Room) AddClient(conn *websocket.Conn) error {
+func (r *Room) HandleNewConnection(conn *websocket.Conn) payload.RawPayload {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 	if r.IsFull() {
-		return errors.New("room is full")
+		return payload.NewErrPayload("Room is full")
 	}
-	clientId := r.CreateClient(conn)
+	clientId := r.AddClient(conn)
 	r.globalBroadcast(payload.NewJoinedPayload(clientId))
 
 	r.directBroadcast(clientId,
@@ -89,10 +88,10 @@ func (r *Room) AddClient(conn *websocket.Conn) error {
 			clientId,
 		),
 	)
-	return nil
+	return payload.NewNonePayload()
 }
 
-func (r *Room) CreateClient(conn *websocket.Conn) int {
+func (r *Room) AddClient(conn *websocket.Conn) int {
 	clientId := len(r.clients) + 1
 	client := NewClient(clientId, conn, r)
 	r.clients[clientId] = client

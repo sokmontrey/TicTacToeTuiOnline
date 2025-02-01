@@ -27,7 +27,7 @@ func (m *JoinRoomForm) Init() {
 
 func (m *JoinRoomForm) Render() {
 	fmt.Print("\033[H\033[2J")
-	fmt.Println("AddClient room")
+	fmt.Println("HandleNewConnection room")
 	fmt.Printf("Room id (4 digits number): %s_ \n", m.roomId)
 	fmt.Printf("%s\n", m.msg)
 }

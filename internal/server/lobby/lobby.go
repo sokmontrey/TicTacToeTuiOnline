@@ -1,7 +1,6 @@
 package lobby
 
 import (
-	"errors"
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
@@ -61,16 +60,14 @@ func (l *Lobby) handleJoin(c *gin.Context) {
 	}
 
 	roomId := c.Query("room-id")
-	room, err := l.GetRoom(roomId)
-	stop := l.resWsError(conn, err)
-	if stop {
+	room, rp := l.GetRoom(roomId)
+	if l.resWsError(conn, rp) {
 		return
 	}
 
 	// also handle full room
-	err = room.AddClient(conn)
-	stop = l.resWsError(conn, err)
-	if stop {
+	rp = room.HandleNewConnection(conn)
+	if l.resWsError(conn, rp) {
 		return
 	}
 
@@ -81,8 +78,8 @@ func (l *Lobby) handleJoin(c *gin.Context) {
 // Endpoint example: http://localhost:8080/create-room?num-players=3
 func (l *Lobby) handleCreateRoom(c *gin.Context) {
 	numPlayersStr := c.Query("num-players")
-	numPlayers, err := l.validateNumPlayers(numPlayersStr)
-	if l.resHttpError(c, err) {
+	numPlayers, rp := l.validateNumPlayers(numPlayersStr)
+	if l.resHttpError(c, rp) {
 		return
 	}
 	l.mu.Lock()
@@ -99,32 +96,33 @@ func (l *Lobby) handleCreateRoom(c *gin.Context) {
 // Helpers
 // ============================================================================
 
-func (l *Lobby) resWsError(conn *websocket.Conn, err error) bool {
-	if err != nil {
-		payload.NewErrPayload(err.Error()).WsSend(conn)
-		conn.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseInternalServerErr, err.Error()))
+func (l *Lobby) resWsError(conn *websocket.Conn, rp payload.RawPayload) bool {
+	if rp.Type != payload.NonePayload {
+		rp.WsSend(conn)
+		conn.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseInternalServerErr, ""))
 		return true
 	}
 	return false
 }
 
-func (l *Lobby) resHttpError(c *gin.Context, err error) bool {
-	if err != nil {
-		payload.NewErrPayload(err.Error()).HttpSend(http.StatusBadRequest, c)
+func (l *Lobby) resHttpError(c *gin.Context, rp payload.RawPayload) bool {
+	if rp.Type != payload.NonePayload {
+		rp.HttpSend(http.StatusBadRequest, c)
 		return true
 	}
 	return false
 }
 
-func (l *Lobby) validateNumPlayers(numPlayersStr string) (int, error) {
+func (l *Lobby) validateNumPlayers(numPlayersStr string) (int, payload.RawPayload) {
 	numPlayers, err := strconv.Atoi(numPlayersStr)
 	if err != nil {
-		return 0, errors.New("invalid num-players")
+		return 0, payload.NewErrPayload("Invalid num-players")
 	}
 	if numPlayers < MinPlayers || numPlayers > MaxPlayers {
-		return 0, errors.New(fmt.Sprintf("num-players must be between %d and %d", MinPlayers, MaxPlayers))
+		str := fmt.Sprintf("num-players must be between %d and %d", MinPlayers, MaxPlayers)
+		return 0, payload.NewErrPayload(str)
 	}
-	return numPlayers, nil
+	return numPlayers, payload.NewNonePayload()
 }
 
 func (l *Lobby) generateRoomId() string {
@@ -149,10 +147,10 @@ func (l *Lobby) CountRooms() int {
 	return len(l.rooms)
 }
 
-func (l *Lobby) GetRoom(roomId string) (*Room, error) {
+func (l *Lobby) GetRoom(roomId string) (*Room, payload.RawPayload) {
 	_, ok := l.rooms[roomId]
 	if !ok {
-		return nil, errors.New("room not found")
+		return nil, payload.NewErrPayload("Room not found")
 	}
-	return l.rooms[roomId], nil
+	return l.rooms[roomId], payload.NewNonePayload()
 }
