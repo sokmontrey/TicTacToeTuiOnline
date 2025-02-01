@@ -101,8 +101,7 @@ func (l *Lobby) handleCreateRoom(c *gin.Context) {
 
 func (l *Lobby) resWsError(conn *websocket.Conn, err error) bool {
 	if err != nil {
-		payload := payload.NewPayload(payload.ServerErrPayload, err.Error())
-		payload.WsSend(conn)
+		payload.NewErrPayload(err.Error()).WsSend(conn)
 		conn.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseInternalServerErr, err.Error()))
 		return true
 	}
@@ -111,8 +110,7 @@ func (l *Lobby) resWsError(conn *websocket.Conn, err error) bool {
 
 func (l *Lobby) resHttpError(c *gin.Context, err error) bool {
 	if err != nil {
-		payload := payload.NewPayload(payload.ServerErrPayload, err.Error())
-		payload.HttpSend(http.StatusBadRequest, c)
+		payload.NewErrPayload(err.Error()).HttpSend(http.StatusBadRequest, c)
 		return true
 	}
 	return false

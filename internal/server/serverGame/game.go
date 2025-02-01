@@ -51,15 +51,15 @@ func (g *Game) ConfirmPlayer(playerId int) (global payload.RawPayload, direct pa
 	}
 	player := g.players[playerId]
 	if g.currentTurn != playerId {
-		return payload.NewNonePayload(), payload.NewPayload(payload.ServerErrPayload, "Not your turn!")
+		return payload.NewNonePayload(), payload.NewErrPayload("Not your turn!")
 	}
 	if g.board.GetCell(player.Position) != -1 {
-		return payload.NewNonePayload(), payload.NewPayload(payload.ServerErrPayload, "Cell is already taken!")
+		return payload.NewNonePayload(), payload.NewErrPayload("Cell is already taken!")
 	}
 	if g.board.IsEmpty() && player.Position != pkg.NewVec2(0, 0) {
-		return payload.NewNonePayload(), payload.NewPayload(payload.ServerErrPayload, "Start at the center!")
+		return payload.NewNonePayload(), payload.NewErrPayload("Start at the center!")
 	} else if !g.board.IsEmpty() && !g.board.IsAdjacent(player.Position) {
-		return payload.NewNonePayload(), payload.NewPayload(payload.ServerErrPayload, "Too part apart!")
+		return payload.NewNonePayload(), payload.NewErrPayload("Too part apart!")
 	}
 	g.board.SetCell(player.Position, playerId)
 	connectedCells := g.board.CheckConnected(player.Position, g.numConnectedCells)
