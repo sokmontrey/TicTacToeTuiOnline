@@ -40,20 +40,23 @@ func (m *GameRoom) Init() {
 }
 
 func (m *GameRoom) Render() {
-	pkg.TUIWriteText(0, "TicTacToeTui")
-	pkg.TUIWriteText(1, fmt.Sprintf("Room id: %s", m.roomId))
+	pkg.TUIWriteText(1, "TicTac ToeTui")
+	pkg.TUIWriteText(2, fmt.Sprintf("Room id: %s", m.roomId))
 	currentTurn := m.game.GetCurrentTurn()
 	if currentTurn == m.playerId {
-		pkg.TUIWriteTextWithColor(3, "Your turn!", termbox.ColorGreen)
+		pkg.TUIWriteTextWithColor(4, "YOUR TURN", termbox.ColorGreen)
 	} else {
 		currentTurnMark := m.game.GetPlayerMark(currentTurn)
 		bracket := m.game.GetPlayerCursor(currentTurn)
 		color := m.game.GetPlayerColor(currentTurn)
-		symbol := fmt.Sprintf("Turn: %c%c%c", bracket.Left, currentTurnMark, bracket.Right)
-		pkg.TUIWriteTextWithColor(3, symbol, color)
+		symbol := fmt.Sprintf("%c%c%c", bracket.Left, currentTurnMark, bracket.Right)
+		pkg.TUIWriteTextWithColor(4, symbol, color)
 	}
-	pkg.TUIWriteTextWithColor(4, m.displayMsg, termbox.ColorRed)
-	m.game.Render(6)
+	nextLine := m.game.Render(5)
+	pkg.TUIWriteTextWithColor(nextLine, m.displayMsg, termbox.ColorRed)
+	pkg.TUIWriteTextWithColor(nextLine+1, "  W  ", termbox.ColorLightGray)
+	pkg.TUIWriteTextWithColor(nextLine+2, "A S D", termbox.ColorLightGray)
+	pkg.TUIWriteTextWithColor(nextLine+3, "SPACE", termbox.ColorLightGray)
 	termbox.Flush()
 }
 

@@ -3,15 +3,7 @@ package pkg
 import "github.com/nsf/termbox-go"
 
 func TUIWriteText(line int, str string) {
-	strRune := []rune(str)
-	for i, ch := range strRune {
-		termbox.SetCell(i, line, ch, termbox.ColorDefault, termbox.ColorDefault)
-	}
-	w, _ := termbox.Size()
-	remaining := w - len(strRune)
-	for i := 0; i < remaining; i++ {
-		termbox.SetCell(i+len(strRune), line, ' ', termbox.ColorDefault, termbox.ColorDefault)
-	}
+	TUIWriteTextWithColor(line, str, termbox.ColorDefault)
 }
 
 func TUILine(line int) {
@@ -24,12 +16,18 @@ func TUILine(line int) {
 
 func TUIWriteTextWithColor(line int, str string, color termbox.Attribute) {
 	strRune := []rune(str)
-	for i, ch := range strRune {
-		termbox.SetCell(i, line, ch, color, termbox.ColorDefault)
-	}
 	w, _ := termbox.Size()
-	remaining := w - len(strRune)
+	remaining := (w - len(strRune)) / 2
+
 	for i := 0; i < remaining; i++ {
-		termbox.SetCell(i+len(strRune), line, ' ', termbox.ColorDefault, termbox.ColorDefault)
+		termbox.SetCell(i, line, ' ', termbox.ColorDefault, termbox.ColorDefault)
+	}
+
+	for i, ch := range strRune {
+		termbox.SetCell(i+remaining, line, ch, color, termbox.ColorDefault)
+	}
+
+	for i := 0; i < remaining; i++ {
+		termbox.SetCell(i+len(strRune)+remaining, line, ' ', termbox.ColorDefault, termbox.ColorDefault)
 	}
 }
