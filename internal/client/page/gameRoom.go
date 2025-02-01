@@ -8,6 +8,7 @@ import (
 	"github.com/nsf/termbox-go"
 	"github.com/sokmontrey/TicTacToeTuiOnline/internal/client/clientGame"
 	"github.com/sokmontrey/TicTacToeTuiOnline/internal/client/pageMsg"
+	"github.com/sokmontrey/TicTacToeTuiOnline/payload"
 	"github.com/sokmontrey/TicTacToeTuiOnline/pkg"
 )
 
@@ -17,7 +18,7 @@ type GameRoom struct {
 	roomId      string
 	displayMsg  string
 	conn        *websocket.Conn
-	move        chan pkg.Payload
+	move        chan payload.RawPayload
 	game        *clientGame.Game
 }
 
@@ -27,7 +28,7 @@ func NewGameRoom(pm *PageManager, roomId string) *GameRoom {
 		playerId:    1,
 		roomId:      roomId,
 		displayMsg:  "",
-		move:        make(chan pkg.Payload),
+		move:        make(chan payload.RawPayload),
 		game:        clientGame.NewGame(1),
 	}
 }
@@ -57,7 +58,7 @@ func (m *GameRoom) Render() {
 func (m *GameRoom) Update(msg pageMsg.PageMsg) Command {
 	m.displayMsg = ""
 	switch msg := msg.(type) {
-	case pageMsg.JoinedMsg:
+	case payload.JoinedUpdate:
 		m.displayMsg = fmt.Sprintf("Player %d joined", msg.PlayerId)
 	case pageMsg.SyncMsg:
 		m.playerId = msg.CurrentPlayerId
@@ -81,8 +82,8 @@ func (m *GameRoom) Update(msg pageMsg.PageMsg) Command {
 			return QuitCommand
 		}
 		moveCode := msg.ToMoveCode()
-		if moveCode != pkg.MoveCodeNone {
-			m.move <- pkg.NewPayload(pkg.ClientMovePayload, moveCode)
+		if moveCode != payload.MoveCodeNone {
+			m.move <- payload.NewPayload(payload.ClientMovePayload, moveCode)
 		}
 	case pageMsg.PlayerPositionMsg:
 		playerId := msg.PlayerId
@@ -131,48 +132,46 @@ func (m *GameRoom) connectAndListenToServer() {
 			m.pageManager.msg <- pageMsg.NewErrMsg("Connection closed")
 			return
 		}
-		var payload pkg.Payload
-		err = json.Unmarshal(msg, &payload)
+		var rawPayload payload.RawPayload
+		err = json.Unmarshal(msg, &rawPayload)
 		if err != nil {
 			m.pageManager.msg <- pageMsg.NewErrMsg("Unable to parse server response")
 		}
-		switch payload.Type {
-		case pkg.ServerJoinedPayload:
-			var joinedUpdate pkg.JoinedUpdate
-			json.Unmarshal(payload.Data, &joinedUpdate)
-			m.pageManager.msg <- pageMsg.NewJoinedMsg(joinedUpdate.PlayerId)
-		case pkg.ServerErrPayload:
+		switch rawPayload.Type {
+		case payload.ServerJoinedPayload:
+			m.pageManager.msg <- rawPayload.ToJoinedUpdate()
+		case payload.ServerErrPayload:
 			var msgStr string
-			json.Unmarshal(payload.Data, &msgStr)
+			json.Unmarshal(rawPayload.Data, &msgStr)
 			m.pageManager.msg <- pageMsg.NewErrMsg(msgStr)
-		case pkg.ServerOkPayload:
+		case payload.ServerOkPayload:
 			var msgStr string
-			json.Unmarshal(payload.Data, &msgStr)
+			json.Unmarshal(rawPayload.Data, &msgStr)
 			m.pageManager.msg <- pageMsg.NewOkMsg(msgStr)
-		case pkg.ServerPositionPayload:
-			var positionUpdate pkg.PlayerUpdate
-			json.Unmarshal(payload.Data, &positionUpdate)
+		case payload.ServerPositionPayload:
+			var positionUpdate payload.PlayerUpdate
+			json.Unmarshal(rawPayload.Data, &positionUpdate)
 			m.pageManager.msg <- pageMsg.NewPositionMsg(positionUpdate.PlayerId, positionUpdate.Position)
-		case pkg.ServerSyncPayload:
-			var syncData pkg.SyncUpdate
-			json.Unmarshal(payload.Data, &syncData)
+		case payload.ServerSyncPayload:
+			var syncData payload.SyncUpdate
+			json.Unmarshal(rawPayload.Data, &syncData)
 			m.pageManager.msg <- pageMsg.NewSyncMsg( // TODO; for each of these, pass payload data directly
 				syncData.PlayerPositions,
 				syncData.CellPositions,
 				syncData.CurrentTurn,
 				syncData.CurrentPlayerId,
 			)
-		case pkg.ServerBoardUpdatePayload:
-			var boardUpdate pkg.BoardUpdate
-			json.Unmarshal(payload.Data, &boardUpdate)
+		case payload.ServerBoardUpdatePayload:
+			var boardUpdate payload.BoardUpdate
+			json.Unmarshal(rawPayload.Data, &boardUpdate)
 			m.pageManager.msg <- pageMsg.NewBoardUpdateMsg(
 				boardUpdate.Cell.CellPos,
 				boardUpdate.Cell.CellId,
 				boardUpdate.NextTurn,
 			)
-		case pkg.ServerTerminationPayload:
-			var terminationUpdate pkg.TerminationUpdate
-			json.Unmarshal(payload.Data, &terminationUpdate)
+		case payload.ServerTerminationPayload:
+			var terminationUpdate payload.TerminationUpdate
+			json.Unmarshal(rawPayload.Data, &terminationUpdate)
 			m.pageManager.msg <- pageMsg.NewTerminationMsg(
 				terminationUpdate.WinnerId,
 				terminationUpdate.ConnectedCells,

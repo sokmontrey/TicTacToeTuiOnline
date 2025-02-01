@@ -1,10 +1,11 @@
-package pkg
+package payload
 
 import (
 	"encoding/json"
 	"github.com/eiannone/keyboard"
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
+	"github.com/sokmontrey/TicTacToeTuiOnline/pkg"
 )
 
 type PayloadType byte
@@ -12,13 +13,13 @@ type PayloadType byte
 type MoveCode byte
 
 type PlayerUpdate struct {
-	PlayerId int  `json:"playerId"`
-	Position Vec2 `json:"position"`
+	PlayerId int      `json:"playerId"`
+	Position pkg.Vec2 `json:"position"`
 }
 
 type CellUpdate struct {
-	CellPos Vec2 `json:"cellPos"`
-	CellId  int  `json:"cellId"`
+	CellPos pkg.Vec2 `json:"cellPos"`
+	CellId  int      `json:"cellId"`
 }
 
 type BoardUpdate struct {
@@ -33,13 +34,9 @@ type SyncUpdate struct {
 	CurrentPlayerId int            `json:"currentPlayerId"`
 }
 
-type JoinedUpdate struct {
-	PlayerId int `json:"playerId"`
-}
-
 type TerminationUpdate struct {
-	ConnectedCells []Vec2 `json:"connectedCells"`
-	WinnerId       int    `json:"winnerId"`
+	ConnectedCells []pkg.Vec2 `json:"connectedCells"`
+	WinnerId       int        `json:"winnerId"`
 }
 
 const (
@@ -63,29 +60,29 @@ const (
 	MoveCodeRight
 )
 
-type Payload struct {
+type RawPayload struct {
 	Type PayloadType     `json:"type"`
 	Data json.RawMessage `json:"data"`
 }
 
-func (p Payload) WsSend(conn *websocket.Conn) error {
-	return conn.WriteJSON(p)
+func (rp RawPayload) WsSend(conn *websocket.Conn) error {
+	return conn.WriteJSON(rp)
 }
 
-func (p Payload) HttpSend(statusCode int, c *gin.Context) error {
-	c.JSON(statusCode, p)
+func (rp RawPayload) HttpSend(statusCode int, c *gin.Context) error {
+	c.JSON(statusCode, rp)
 	return nil
 }
 
-func NewPayload(payloadType PayloadType, data any) Payload {
+func NewPayload(payloadType PayloadType, data any) RawPayload {
 	rawData, _ := json.Marshal(data)
-	return Payload{
+	return RawPayload{
 		Type: payloadType,
 		Data: rawData,
 	}
 }
 
-func NewNonePayload() Payload {
+func NewNonePayload() RawPayload {
 	return NewPayload(NonePayload, nil)
 }
 
@@ -93,7 +90,7 @@ func NewSyncPayload(playerPositions []PlayerUpdate,
 	cellPositions []CellUpdate,
 	currentTurn int,
 	currentPlayerId int,
-) Payload {
+) RawPayload {
 	return NewPayload(ServerSyncPayload, SyncUpdate{
 		PlayerPositions: playerPositions,
 		CellPositions:   cellPositions,
@@ -102,17 +99,11 @@ func NewSyncPayload(playerPositions []PlayerUpdate,
 	})
 }
 
-func NewPositionUpdatePayload(playerId int, position Vec2) Payload {
+func NewPositionUpdatePayload(playerId int, position pkg.Vec2) RawPayload {
 	return NewPayload(ServerPositionPayload, PlayerUpdate{playerId, position})
 }
 
-func NewJoinedUpdatePayload(playerId int) Payload {
-	return NewPayload(ServerJoinedPayload, JoinedUpdate{
-		PlayerId: playerId,
-	})
-}
-
-func NewBoardUpdatePayload(cellPos Vec2, cellId int, nextTurn int) Payload {
+func NewBoardUpdatePayload(cellPos pkg.Vec2, cellId int, nextTurn int) RawPayload {
 	return NewPayload(ServerBoardUpdatePayload, BoardUpdate{
 		Cell: CellUpdate{
 			CellPos: cellPos,
@@ -122,8 +113,8 @@ func NewBoardUpdatePayload(cellPos Vec2, cellId int, nextTurn int) Payload {
 	})
 }
 
-func NewTerminationPayload(winnerId int, connectedCells map[Vec2]struct{}) Payload {
-	connectedCellsArr := make([]Vec2, len(connectedCells))
+func NewTerminationPayload(winnerId int, connectedCells map[pkg.Vec2]struct{}) RawPayload {
+	connectedCellsArr := make([]pkg.Vec2, len(connectedCells))
 	for v := range connectedCells {
 		connectedCellsArr = append(connectedCellsArr, v)
 	}

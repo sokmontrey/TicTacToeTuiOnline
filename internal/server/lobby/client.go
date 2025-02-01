@@ -3,13 +3,13 @@ package lobby
 import (
 	"encoding/json"
 	"github.com/gorilla/websocket"
-	"github.com/sokmontrey/TicTacToeTuiOnline/pkg"
+	"github.com/sokmontrey/TicTacToeTuiOnline/payload"
 	"log"
 )
 
 type ClientMove struct {
 	clientId int
-	moveCode pkg.MoveCode
+	moveCode payload.MoveCode
 }
 
 type Client struct {
@@ -41,7 +41,7 @@ func (c *Client) listenForPayload() {
 			log.Printf("Error reading message from client: \"%s\", for room %s", err.Error(), c.room.id)
 			return
 		}
-		var payload pkg.Payload
+		var payload payload.RawPayload
 		err = json.Unmarshal(msg, &payload)
 		if err != nil {
 			log.Printf("Error unmarshaling payload: \"%s\", for room %s", err.Error(), c.room.id)
@@ -54,23 +54,23 @@ func (c *Client) listenForPayload() {
 	}
 }
 
-func (c *Client) routePayload(payload pkg.Payload) bool {
-	switch payload.Type {
-	case pkg.ClientMovePayload:
-		var moveCode pkg.MoveCode
-		err := json.Unmarshal(payload.Data, &moveCode)
+func (c *Client) routePayload(rawPayload payload.RawPayload) bool {
+	switch rawPayload.Type {
+	case payload.ClientMovePayload:
+		var moveCode payload.MoveCode
+		err := json.Unmarshal(rawPayload.Data, &moveCode)
 		if err != nil {
 			log.Printf("Error unmarshaling move code: \"%s\", for room %s", err.Error(), c.room.id)
 			return true
 		}
-		if moveCode != pkg.MoveCodeNone {
+		if moveCode != payload.MoveCodeNone {
 			c.room.move <- ClientMove{c.clientId, moveCode}
 		}
 	}
 	return false
 }
 
-func (c *Client) SendWs(payload pkg.Payload) {
+func (c *Client) SendWs(payload payload.RawPayload) {
 	err := payload.WsSend(c.conn)
 	if err != nil {
 		log.Printf("Error sending payload to client %d: %v", c.clientId, err)

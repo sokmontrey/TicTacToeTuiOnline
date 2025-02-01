@@ -2,6 +2,7 @@ package serverGame
 
 import (
 	"github.com/sokmontrey/TicTacToeTuiOnline/internal/game"
+	"github.com/sokmontrey/TicTacToeTuiOnline/payload"
 	"github.com/sokmontrey/TicTacToeTuiOnline/pkg"
 )
 
@@ -29,45 +30,45 @@ func NewGame(numPlayers int, numConnectedCells int) *Game {
 	return g
 }
 
-func (g *Game) MovePlayer(playerId int, moveCode pkg.MoveCode) (global pkg.Payload, direct pkg.Payload) {
+func (g *Game) MovePlayer(playerId int, moveCode payload.MoveCode) (global payload.RawPayload, direct payload.RawPayload) {
 	player := g.players[playerId]
-	moveFunc, ok := map[pkg.MoveCode]func() pkg.Vec2{
-		pkg.MoveCodeUp:    player.MoveUp,
-		pkg.MoveCodeDown:  player.MoveDown,
-		pkg.MoveCodeLeft:  player.MoveLeft,
-		pkg.MoveCodeRight: player.MoveRight,
+	moveFunc, ok := map[payload.MoveCode]func() pkg.Vec2{
+		payload.MoveCodeUp:    player.MoveUp,
+		payload.MoveCodeDown:  player.MoveDown,
+		payload.MoveCodeLeft:  player.MoveLeft,
+		payload.MoveCodeRight: player.MoveRight,
 	}[moveCode]
 	if ok {
 		newPos := moveFunc()
-		return pkg.NewPositionUpdatePayload(playerId, newPos), pkg.NewNonePayload()
+		return payload.NewPositionUpdatePayload(playerId, newPos), payload.NewNonePayload()
 	}
-	return pkg.NewNonePayload(), pkg.NewNonePayload()
+	return payload.NewNonePayload(), payload.NewNonePayload()
 }
 
-func (g *Game) ConfirmPlayer(playerId int) (global pkg.Payload, direct pkg.Payload) {
+func (g *Game) ConfirmPlayer(playerId int) (global payload.RawPayload, direct payload.RawPayload) {
 	if !g.isRunning {
-		return pkg.NewNonePayload(), pkg.NewNonePayload()
+		return payload.NewNonePayload(), payload.NewNonePayload()
 	}
 	player := g.players[playerId]
 	if g.currentTurn != playerId {
-		return pkg.NewNonePayload(), pkg.NewPayload(pkg.ServerErrPayload, "Not your turn!")
+		return payload.NewNonePayload(), payload.NewPayload(payload.ServerErrPayload, "Not your turn!")
 	}
 	if g.board.GetCell(player.Position) != -1 {
-		return pkg.NewNonePayload(), pkg.NewPayload(pkg.ServerErrPayload, "Cell is already taken!")
+		return payload.NewNonePayload(), payload.NewPayload(payload.ServerErrPayload, "Cell is already taken!")
 	}
 	if g.board.IsEmpty() && player.Position != pkg.NewVec2(0, 0) {
-		return pkg.NewNonePayload(), pkg.NewPayload(pkg.ServerErrPayload, "Start at the center!")
+		return payload.NewNonePayload(), payload.NewPayload(payload.ServerErrPayload, "Start at the center!")
 	} else if !g.board.IsEmpty() && !g.board.IsAdjacent(player.Position) {
-		return pkg.NewNonePayload(), pkg.NewPayload(pkg.ServerErrPayload, "Too part apart!")
+		return payload.NewNonePayload(), payload.NewPayload(payload.ServerErrPayload, "Too part apart!")
 	}
 	g.board.SetCell(player.Position, playerId)
 	connectedCells := g.board.CheckConnected(player.Position, g.numConnectedCells)
 	if len(connectedCells) >= g.numConnectedCells {
 		g.isRunning = false
-		return pkg.NewTerminationPayload(playerId, connectedCells), pkg.NewNonePayload()
+		return payload.NewTerminationPayload(playerId, connectedCells), payload.NewNonePayload()
 	}
 	g.updateTurn()
-	return pkg.NewBoardUpdatePayload(player.Position, playerId, g.currentTurn), pkg.NewNonePayload()
+	return payload.NewBoardUpdatePayload(player.Position, playerId, g.currentTurn), payload.NewNonePayload()
 }
 
 func (g *Game) updateTurn() {
@@ -77,10 +78,10 @@ func (g *Game) updateTurn() {
 	}
 }
 
-func (g *Game) GetAllCells() []pkg.CellUpdate {
-	cellUpdates := make([]pkg.CellUpdate, 0)
+func (g *Game) GetAllCells() []payload.CellUpdate {
+	cellUpdates := make([]payload.CellUpdate, 0)
 	for pos, cellId := range g.board.GetAllCells() {
-		cellUpdates = append(cellUpdates, pkg.CellUpdate{
+		cellUpdates = append(cellUpdates, payload.CellUpdate{
 			CellId:  cellId,
 			CellPos: pos,
 		})
@@ -88,10 +89,10 @@ func (g *Game) GetAllCells() []pkg.CellUpdate {
 	return cellUpdates
 }
 
-func (g *Game) GetAllPlayers() []pkg.PlayerUpdate {
-	playerUpdates := make([]pkg.PlayerUpdate, 0)
+func (g *Game) GetAllPlayers() []payload.PlayerUpdate {
+	playerUpdates := make([]payload.PlayerUpdate, 0)
 	for id, player := range g.players {
-		playerUpdates = append(playerUpdates, pkg.PlayerUpdate{
+		playerUpdates = append(playerUpdates, payload.PlayerUpdate{
 			PlayerId: id,
 			Position: player.Position,
 		})

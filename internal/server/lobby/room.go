@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"github.com/gorilla/websocket"
 	"github.com/sokmontrey/TicTacToeTuiOnline/internal/server/serverGame"
-	"github.com/sokmontrey/TicTacToeTuiOnline/pkg"
+	"github.com/sokmontrey/TicTacToeTuiOnline/payload"
 	"sync"
 )
 
@@ -36,24 +36,24 @@ func (r *Room) listenForClientsMove() {
 	for {
 		for move := range r.move {
 			r.mu.Lock()
-			if move.moveCode == pkg.MoveCodeNone {
+			if move.moveCode == payload.MoveCodeNone {
 				continue
 			}
-			var globalPayload, directPayload pkg.Payload
-			if move.moveCode == pkg.MoveCodeConfirm {
+			var globalPayload, directPayload payload.RawPayload
+			if move.moveCode == payload.MoveCodeConfirm {
 				if r.IsFull() {
 					globalPayload, directPayload = r.game.ConfirmPlayer(move.clientId)
 				} else {
-					globalPayload = pkg.NewNonePayload()
-					directPayload = pkg.NewPayload(pkg.ServerErrPayload, "Room is not full")
+					globalPayload = payload.NewNonePayload()
+					directPayload = payload.NewPayload(payload.ServerErrPayload, "Room is not full")
 				}
 			} else {
 				globalPayload, directPayload = r.game.MovePlayer(move.clientId, move.moveCode)
 			}
-			if globalPayload.Type != pkg.NonePayload {
+			if globalPayload.Type != payload.NonePayload {
 				r.globalBroadcast(globalPayload)
 			}
-			if directPayload.Type != pkg.NonePayload {
+			if directPayload.Type != payload.NonePayload {
 				r.directBroadcast(move.clientId, directPayload)
 			}
 			r.mu.Unlock()
@@ -61,11 +61,11 @@ func (r *Room) listenForClientsMove() {
 	}
 }
 
-func (r *Room) directBroadcast(clientId int, payload pkg.Payload) {
+func (r *Room) directBroadcast(clientId int, payload payload.RawPayload) {
 	r.clients[clientId].SendWs(payload)
 }
 
-func (r *Room) globalBroadcast(payload pkg.Payload) {
+func (r *Room) globalBroadcast(payload payload.RawPayload) {
 	for _, client := range r.clients {
 		client.SendWs(payload)
 	}
@@ -78,9 +78,9 @@ func (r *Room) AddClient(conn *websocket.Conn) error {
 		return errors.New("room is full")
 	}
 	clientId := r.CreateClient(conn)
-	r.globalBroadcast(pkg.NewJoinedUpdatePayload(clientId))
+	r.globalBroadcast(payload.NewJoinedUpdatePayload(clientId))
 	r.directBroadcast(clientId,
-		pkg.NewSyncPayload(
+		payload.NewSyncPayload(
 			r.game.GetAllPlayers(),
 			r.game.GetAllCells(),
 			r.game.GetCurrentTurn(),
@@ -103,7 +103,7 @@ func (r *Room) RemoveClient(clientId int) {
 	defer r.mu.Unlock()
 	delete(r.clients, clientId)
 	str := fmt.Sprintf("Player %d left the room", clientId)
-	payload := pkg.NewPayload(pkg.ServerOkPayload, str)
+	payload := payload.NewPayload(payload.ServerOkPayload, str)
 	r.globalBroadcast(payload)
 }
 

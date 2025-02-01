@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
-	"github.com/sokmontrey/TicTacToeTuiOnline/pkg"
+	"github.com/sokmontrey/TicTacToeTuiOnline/payload"
 	"log"
 	"math/rand"
 	"net/http"
@@ -92,8 +92,7 @@ func (l *Lobby) handleCreateRoom(c *gin.Context) {
 	l.rooms[id] = room
 	room.Start()
 	log.Printf("Created room %s", id)
-	payload := pkg.NewPayload(pkg.ServerOkPayload, id)
-	payload.HttpSend(http.StatusOK, c)
+	payload.NewOkPayload(id).HttpSend(http.StatusOK, c)
 }
 
 // ============================================================================
@@ -102,7 +101,7 @@ func (l *Lobby) handleCreateRoom(c *gin.Context) {
 
 func (l *Lobby) resWsError(conn *websocket.Conn, err error) bool {
 	if err != nil {
-		payload := pkg.NewPayload(pkg.ServerErrPayload, err.Error())
+		payload := payload.NewPayload(payload.ServerErrPayload, err.Error())
 		payload.WsSend(conn)
 		conn.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseInternalServerErr, err.Error()))
 		return true
@@ -112,7 +111,7 @@ func (l *Lobby) resWsError(conn *websocket.Conn, err error) bool {
 
 func (l *Lobby) resHttpError(c *gin.Context, err error) bool {
 	if err != nil {
-		payload := pkg.NewPayload(pkg.ServerErrPayload, err.Error())
+		payload := payload.NewPayload(payload.ServerErrPayload, err.Error())
 		payload.HttpSend(http.StatusBadRequest, c)
 		return true
 	}

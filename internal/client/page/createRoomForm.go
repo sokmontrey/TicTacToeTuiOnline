@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"github.com/eiannone/keyboard"
 	"github.com/sokmontrey/TicTacToeTuiOnline/internal/client/pageMsg"
-	"github.com/sokmontrey/TicTacToeTuiOnline/pkg"
+	"github.com/sokmontrey/TicTacToeTuiOnline/payload"
 	"net/http"
 )
 
@@ -88,14 +88,13 @@ func (m *CreateRoomForm) requestCreateRoom() (string, error) {
 		return "", errors.New("unable to connect to the server. Try again later")
 	}
 	defer res.Body.Close()
-	var payload pkg.Payload
+	var rawPayload payload.RawPayload
 	if res.StatusCode == http.StatusOK {
-		err = json.NewDecoder(res.Body).Decode(&payload)
+		err = json.NewDecoder(res.Body).Decode(&rawPayload)
 	}
 	if err != nil {
 		return "", errors.New("unable to connect to the server. Try again later")
 	}
-	var roomId string
-	err = json.Unmarshal(payload.Data, &roomId)
+	roomId := rawPayload.ToOkPayload().Value
 	return roomId, err
 }

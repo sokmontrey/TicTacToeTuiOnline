@@ -2,6 +2,7 @@ package pageMsg
 
 import (
 	"github.com/eiannone/keyboard"
+	"github.com/sokmontrey/TicTacToeTuiOnline/payload"
 	"github.com/sokmontrey/TicTacToeTuiOnline/pkg"
 )
 
@@ -10,10 +11,6 @@ type PageMsg any
 type KeyMsg struct {
 	Char rune
 	Key  keyboard.Key
-}
-
-type JoinedMsg struct {
-	PlayerId int
 }
 
 type OkMsg struct {
@@ -37,8 +34,8 @@ type TerminationMsg struct {
 }
 
 type SyncMsg struct {
-	PlayerPositions []pkg.PlayerUpdate
-	CellPositions   []pkg.CellUpdate
+	PlayerPositions []payload.PlayerUpdate
+	CellPositions   []payload.CellUpdate
 	CurrentTurn     int
 	CurrentPlayerId int
 }
@@ -49,10 +46,10 @@ type BoardUpdateMsg struct {
 	NextTurn int
 }
 
-func (k KeyMsg) ToMoveCode() pkg.MoveCode {
-	moveCode := pkg.KeyToMoveCode(k.Key)
-	if moveCode == pkg.MoveCodeNone {
-		moveCode = pkg.CharToMoveCode(k.Char)
+func (k KeyMsg) ToMoveCode() payload.MoveCode {
+	moveCode := payload.KeyToMoveCode(k.Key)
+	if moveCode == payload.MoveCodeNone {
+		moveCode = payload.CharToMoveCode(k.Char)
 	}
 	return moveCode
 }
@@ -81,15 +78,9 @@ func NewBoardUpdateMsg(cellPos pkg.Vec2, cellId int, nextTurn int) BoardUpdateMs
 	}
 }
 
-func NewJoinedMsg(playerId int) JoinedMsg {
-	return JoinedMsg{
-		PlayerId: playerId,
-	}
-}
-
 func NewSyncMsg(
-	playerPositions []pkg.PlayerUpdate,
-	cellPositions []pkg.CellUpdate,
+	playerPositions []payload.PlayerUpdate,
+	cellPositions []payload.CellUpdate,
 	currentTurn int,
 	currentPlayerId int,
 ) SyncMsg {
