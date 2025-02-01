@@ -45,7 +45,8 @@ func (r *Room) listenForClientsMove() {
 					globalPayload, directPayload = r.game.ConfirmPlayer(move.clientId)
 				} else {
 					globalPayload = payload.NewNonePayload()
-					directPayload = payload.NewErrPayload("Room is not full")
+					str := fmt.Sprintf("Room is not full (%d/%d)", r.GetNumClients(), r.maxPlayers)
+					directPayload = payload.NewErrPayload(str)
 				}
 			} else {
 				globalPayload, directPayload = r.game.MovePlayer(move.clientId, move.moveCode)
