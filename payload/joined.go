@@ -2,18 +2,18 @@ package payload
 
 import "encoding/json"
 
-type JoinedUpdate struct {
+type JoinedPayload struct {
 	PlayerId int `json:"playerId"`
 }
 
-func NewJoinedUpdatePayload(playerId int) RawPayload {
-	return NewPayload(ServerJoinedPayload, JoinedUpdate{
+func NewJoinedPayload(playerId int) RawPayload {
+	return NewPayload(ServerJoinedPayload, JoinedPayload{
 		PlayerId: playerId,
 	})
 }
 
-func (rp RawPayload) ToJoinedUpdate() JoinedUpdate {
-	var joinedUpdate JoinedUpdate
+func (rp RawPayload) ToJoinedPayload() JoinedPayload {
+	var joinedUpdate JoinedPayload
 	json.Unmarshal(rp.Data, &joinedUpdate)
 	return joinedUpdate
 }

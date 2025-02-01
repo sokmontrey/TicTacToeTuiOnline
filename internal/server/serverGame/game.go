@@ -40,7 +40,7 @@ func (g *Game) MovePlayer(playerId int, moveCode payload.MoveCode) (global paylo
 	}[moveCode]
 	if ok {
 		newPos := moveFunc()
-		return payload.NewPositionUpdatePayload(playerId, newPos), payload.NewNonePayload()
+		return payload.NewPlayerPayload(playerId, newPos), payload.NewNonePayload()
 	}
 	return payload.NewNonePayload(), payload.NewNonePayload()
 }
@@ -78,26 +78,12 @@ func (g *Game) updateTurn() {
 	}
 }
 
-func (g *Game) GetAllCells() []payload.CellUpdate {
-	cellUpdates := make([]payload.CellUpdate, 0)
-	for pos, cellId := range g.board.GetAllCells() {
-		cellUpdates = append(cellUpdates, payload.CellUpdate{
-			CellId:  cellId,
-			CellPos: pos,
-		})
-	}
-	return cellUpdates
+func (g *Game) GetAllCells() map[pkg.Vec2]int {
+	return g.board.GetAllCells()
 }
 
-func (g *Game) GetAllPlayers() []payload.PlayerUpdate {
-	playerUpdates := make([]payload.PlayerUpdate, 0)
-	for id, player := range g.players {
-		playerUpdates = append(playerUpdates, payload.PlayerUpdate{
-			PlayerId: id,
-			Position: player.Position,
-		})
-	}
-	return playerUpdates
+func (g *Game) GetAllPlayers() map[int]*game.Player {
+	return g.players
 }
 
 func (g *Game) GetCurrentTurn() int {

@@ -58,24 +58,31 @@ func (m *GameRoom) Render() {
 func (m *GameRoom) Update(msg pageMsg.PageMsg) Command {
 	m.displayMsg = ""
 	switch msg := msg.(type) {
-	case payload.JoinedUpdate:
+	case payload.JoinedPayload:
 		m.displayMsg = fmt.Sprintf("Player %d joined", msg.PlayerId)
-	case pageMsg.SyncMsg:
+	case payload.OkPayload:
+		m.displayMsg = msg.Value
+	case payload.ErrPayload:
+		m.displayMsg = "Error: " + msg.Value
+	case payload.PlayerPayload:
+		playerId := msg.PlayerId
+		position := msg.Position
+		m.game.UpdatePlayerPosition(playerId, position, m.playerId)
+	case payload.BoardUpdatePayload:
+		m.game.UpdateBoard(msg.Cell.CellPos, msg.Cell.CellId)
+		m.game.UpdateTurn(msg.NextTurn)
+	case payload.TerminationPayload:
+		m.displayMsg = fmt.Sprintf("Player %d wins!", msg.WinnerId)
+		m.game.UpdateConnectedCells(msg.GetConnectedCellsMap())
+	case payload.SyncPayload:
 		m.playerId = msg.CurrentPlayerId
 		for _, p := range msg.PlayerPositions {
-			m.game.UpdatePlayerPosition(p.PlayerId, p.Position)
-			if p.PlayerId == m.playerId {
-				m.game.UpdateCameraPosition(p.Position)
-			}
+			m.game.UpdatePlayerPosition(p.PlayerId, p.Position, m.playerId)
 		}
 		for _, c := range msg.CellPositions {
 			m.game.UpdateBoard(c.CellPos, c.CellId)
 		}
 		m.game.UpdateTurn(msg.CurrentTurn)
-	case pageMsg.OkMsg:
-		m.displayMsg = msg.Data.(string)
-	case pageMsg.ErrMsg:
-		m.displayMsg = "Error: " + msg.Data.(string)
 	case pageMsg.KeyMsg:
 		switch msg.Key {
 		case keyboard.KeyEsc, keyboard.KeyCtrlC:
@@ -85,19 +92,6 @@ func (m *GameRoom) Update(msg pageMsg.PageMsg) Command {
 		if moveCode != payload.MoveCodeNone {
 			m.move <- payload.NewPayload(payload.ClientMovePayload, moveCode)
 		}
-	case pageMsg.PlayerPositionMsg:
-		playerId := msg.PlayerId
-		position := msg.Position
-		m.game.UpdatePlayerPosition(playerId, position)
-		if playerId == m.playerId {
-			m.game.UpdateCameraPosition(position)
-		}
-	case pageMsg.BoardUpdateMsg:
-		m.game.UpdateBoard(msg.CellPos, msg.CellId)
-		m.game.UpdateTurn(msg.NextTurn)
-	case pageMsg.TerminationMsg:
-		m.displayMsg = fmt.Sprintf("Player %d wins!", msg.WinnerId)
-		m.game.UpdateConnectedCells(msg.ConnectedCells)
 	}
 	return NoneCommand
 }
@@ -137,45 +131,23 @@ func (m *GameRoom) connectAndListenToServer() {
 		if err != nil {
 			m.pageManager.msg <- pageMsg.NewErrMsg("Unable to parse server response")
 		}
+
 		switch rawPayload.Type {
 		case payload.ServerJoinedPayload:
-			m.pageManager.msg <- rawPayload.ToJoinedUpdate()
+			m.pageManager.msg <- rawPayload.ToJoinedPayload()
 		case payload.ServerErrPayload:
-			var msgStr string
-			json.Unmarshal(rawPayload.Data, &msgStr)
-			m.pageManager.msg <- pageMsg.NewErrMsg(msgStr)
+			m.pageManager.msg <- rawPayload.ToErrPayload()
 		case payload.ServerOkPayload:
-			var msgStr string
-			json.Unmarshal(rawPayload.Data, &msgStr)
-			m.pageManager.msg <- pageMsg.NewOkMsg(msgStr)
-		case payload.ServerPositionPayload:
-			var positionUpdate payload.PlayerUpdate
-			json.Unmarshal(rawPayload.Data, &positionUpdate)
-			m.pageManager.msg <- pageMsg.NewPositionMsg(positionUpdate.PlayerId, positionUpdate.Position)
-		case payload.ServerSyncPayload:
-			var syncData payload.SyncUpdate
-			json.Unmarshal(rawPayload.Data, &syncData)
-			m.pageManager.msg <- pageMsg.NewSyncMsg( // TODO; for each of these, pass payload data directly
-				syncData.PlayerPositions,
-				syncData.CellPositions,
-				syncData.CurrentTurn,
-				syncData.CurrentPlayerId,
-			)
+			m.pageManager.msg <- rawPayload.ToOkPayload()
+		case payload.ServerPlayerUpdatePayload:
+			m.pageManager.msg <- rawPayload.ToPlayerPayload()
 		case payload.ServerBoardUpdatePayload:
-			var boardUpdate payload.BoardUpdate
-			json.Unmarshal(rawPayload.Data, &boardUpdate)
-			m.pageManager.msg <- pageMsg.NewBoardUpdateMsg(
-				boardUpdate.Cell.CellPos,
-				boardUpdate.Cell.CellId,
-				boardUpdate.NextTurn,
-			)
+			m.pageManager.msg <- rawPayload.ToBoardUpdatePayload()
+		case payload.ServerSyncPayload:
+			m.pageManager.msg <- rawPayload.ToSyncUpdatePayload()
 		case payload.ServerTerminationPayload:
-			var terminationUpdate payload.TerminationUpdate
-			json.Unmarshal(rawPayload.Data, &terminationUpdate)
-			m.pageManager.msg <- pageMsg.NewTerminationMsg(
-				terminationUpdate.WinnerId,
-				terminationUpdate.ConnectedCells,
-			)
+			m.pageManager.msg <- rawPayload.ToTerminationPayload()
+		default:
 		}
 	}
 }

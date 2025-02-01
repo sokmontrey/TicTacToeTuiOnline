@@ -6,10 +6,8 @@ type OkPayload struct {
 	Value string `json:"value"`
 }
 
-func NewOkPayload(msg string) RawPayload {
-	return NewPayload(ServerOkPayload, OkPayload{
-		Value: msg,
-	})
+func NewOkPayload(value string) RawPayload {
+	return NewPayload(ServerOkPayload, OkPayload{value})
 }
 
 func (rp RawPayload) ToOkPayload() OkPayload {

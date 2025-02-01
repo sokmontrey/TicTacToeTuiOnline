@@ -36,13 +36,16 @@ func NewGame(numPlayers int) *Game {
 	return g
 }
 
-func (g *Game) UpdatePlayerPosition(playerId int, position pkg.Vec2) {
+func (g *Game) UpdatePlayerPosition(playerId int, pos pkg.Vec2, ownerPlayerId int) {
 	player, ok := g.players[playerId]
 	if !ok {
-		g.players[playerId] = game.NewPlayer(playerId, position)
+		g.players[playerId] = game.NewPlayer(playerId, pos)
 		return
 	}
-	player.Position = position
+	player.Position = pos
+	if playerId == ownerPlayerId {
+		g.UpdateCameraPosition(pos)
+	}
 }
 
 func (g *Game) UpdateConnectedCells(connectedCells map[pkg.Vec2]struct{}) {
