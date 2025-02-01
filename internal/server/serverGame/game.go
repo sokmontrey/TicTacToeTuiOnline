@@ -6,18 +6,22 @@ import (
 )
 
 type Game struct {
-	numPlayers  int
-	players     map[int]*game.Player
-	currentTurn int
-	board       *game.Board
+	numPlayers        int
+	players           map[int]*game.Player
+	currentTurn       int
+	board             *game.Board
+	numConnectedCells int
+	isRunning         bool
 }
 
-func NewGame(numPlayers int) *Game {
+func NewGame(numPlayers int, numConnectedCells int) *Game {
 	g := &Game{
-		numPlayers:  numPlayers,
-		players:     make(map[int]*game.Player),
-		currentTurn: 1,
-		board:       game.NewBoard(),
+		numPlayers:        numPlayers,
+		players:           make(map[int]*game.Player),
+		currentTurn:       1,
+		board:             game.NewBoard(),
+		numConnectedCells: numConnectedCells,
+		isRunning:         true,
 	}
 	for i := 1; i <= numPlayers; i++ {
 		g.players[i] = game.NewPlayer(i, pkg.NewVec2(0, 0))
@@ -41,6 +45,9 @@ func (g *Game) MovePlayer(playerId int, moveCode pkg.MoveCode) (global pkg.Paylo
 }
 
 func (g *Game) ConfirmPlayer(playerId int) (global pkg.Payload, direct pkg.Payload) {
+	if !g.isRunning {
+		return pkg.NewNonePayload(), pkg.NewNonePayload()
+	}
 	player := g.players[playerId]
 	if g.currentTurn != playerId {
 		return pkg.NewNonePayload(), pkg.NewPayload(pkg.ServerErrPayload, "Not your turn!")
@@ -54,6 +61,11 @@ func (g *Game) ConfirmPlayer(playerId int) (global pkg.Payload, direct pkg.Paylo
 		return pkg.NewNonePayload(), pkg.NewPayload(pkg.ServerErrPayload, "Too part apart!")
 	}
 	g.board.SetCell(player.Position, playerId)
+	connectedCells := g.board.CheckConnected(player.Position, g.numConnectedCells)
+	if len(connectedCells) >= g.numConnectedCells {
+		g.isRunning = false
+		return pkg.NewTerminationPayload(playerId, connectedCells), pkg.NewNonePayload()
+	}
 	g.updateTurn()
 	return pkg.NewBoardUpdatePayload(player.Position, playerId, g.currentTurn), pkg.NewNonePayload()
 }

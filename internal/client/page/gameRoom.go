@@ -94,6 +94,9 @@ func (m *GameRoom) Update(msg pageMsg.PageMsg) Command {
 	case pageMsg.BoardUpdateMsg:
 		m.game.UpdateBoard(msg.CellPos, msg.CellId)
 		m.game.UpdateTurn(msg.NextTurn)
+	case pageMsg.TerminationMsg:
+		m.displayMsg = fmt.Sprintf("Player %d wins!", msg.WinnerId)
+		m.game.UpdateConnectedCells(msg.ConnectedCells)
 	}
 	return NoneCommand
 }
@@ -166,6 +169,13 @@ func (m *GameRoom) connectAndListenToServer() {
 				boardUpdate.Cell.CellPos,
 				boardUpdate.Cell.CellId,
 				boardUpdate.NextTurn,
+			)
+		case pkg.ServerTerminationPayload:
+			var terminationUpdate pkg.TerminationUpdate
+			json.Unmarshal(payload.Data, &terminationUpdate)
+			m.pageManager.msg <- pageMsg.NewTerminationMsg(
+				terminationUpdate.WinnerId,
+				terminationUpdate.ConnectedCells,
 			)
 		}
 	}

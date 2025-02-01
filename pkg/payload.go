@@ -37,12 +37,18 @@ type JoinedUpdate struct {
 	PlayerId int `json:"playerId"`
 }
 
+type TerminationUpdate struct {
+	ConnectedCells []Vec2 `json:"connectedCells"`
+	WinnerId       int    `json:"winnerId"`
+}
+
 const (
 	ServerErrPayload PayloadType = iota
 	ServerOkPayload
 	ServerSyncPayload
 	ServerPositionPayload
 	ServerJoinedPayload
+	ServerTerminationPayload
 	ServerBoardUpdatePayload
 	ClientMovePayload
 	NonePayload
@@ -113,6 +119,17 @@ func NewBoardUpdatePayload(cellPos Vec2, cellId int, nextTurn int) Payload {
 			CellId:  cellId,
 		},
 		NextTurn: nextTurn,
+	})
+}
+
+func NewTerminationPayload(winnerId int, connectedCells map[Vec2]struct{}) Payload {
+	connectedCellsArr := make([]Vec2, len(connectedCells))
+	for v := range connectedCells {
+		connectedCellsArr = append(connectedCellsArr, v)
+	}
+	return NewPayload(ServerTerminationPayload, TerminationUpdate{
+		WinnerId:       winnerId,
+		ConnectedCells: connectedCellsArr,
 	})
 }
 

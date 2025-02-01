@@ -24,7 +24,7 @@ func NewRoom(numPlayers int, id string) *Room {
 		maxPlayers: numPlayers,
 		clients:    make(map[int]*Client),
 		move:       make(chan ClientMove, 10),
-		game:       serverGame.NewGame(numPlayers),
+		game:       serverGame.NewGame(numPlayers, 5),
 	}
 }
 

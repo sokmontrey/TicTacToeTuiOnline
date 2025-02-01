@@ -31,6 +31,11 @@ type PlayerPositionMsg struct {
 	Position pkg.Vec2
 }
 
+type TerminationMsg struct {
+	WinnerId       int
+	ConnectedCells map[pkg.Vec2]struct{}
+}
+
 type SyncMsg struct {
 	PlayerPositions []pkg.PlayerUpdate
 	CellPositions   []pkg.CellUpdate
@@ -93,5 +98,19 @@ func NewSyncMsg(
 		CellPositions:   cellPositions,
 		CurrentTurn:     currentTurn,
 		CurrentPlayerId: currentPlayerId,
+	}
+}
+
+func NewTerminationMsg(
+	winnerId int,
+	connectedCellsArr []pkg.Vec2,
+) TerminationMsg {
+	connectedCells := make(map[pkg.Vec2]struct{})
+	for _, v := range connectedCellsArr {
+		connectedCells[v] = struct{}{}
+	}
+	return TerminationMsg{
+		WinnerId:       winnerId,
+		ConnectedCells: connectedCells,
 	}
 }

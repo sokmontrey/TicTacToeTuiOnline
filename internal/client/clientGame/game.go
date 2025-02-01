@@ -14,22 +14,24 @@ type PlayerBracket struct {
 type PlayerMark rune
 
 type Game struct {
-	numPlayers  int
-	players     map[int]*game.Player
-	radius      int
-	currentTurn int
-	cameraPos   pkg.Vec2
-	board       *game.Board
+	numPlayers     int
+	players        map[int]*game.Player
+	radius         int
+	currentTurn    int
+	cameraPos      pkg.Vec2
+	board          *game.Board
+	connectedCells map[pkg.Vec2]struct{}
 }
 
 func NewGame(numPlayers int) *Game {
 	g := &Game{
-		numPlayers:  numPlayers,
-		players:     make(map[int]*game.Player),
-		radius:      7,
-		currentTurn: 1,
-		cameraPos:   pkg.NewVec2(0, 0),
-		board:       game.NewBoard(),
+		numPlayers:     numPlayers,
+		players:        make(map[int]*game.Player),
+		radius:         7,
+		currentTurn:    1,
+		cameraPos:      pkg.NewVec2(0, 0),
+		board:          game.NewBoard(),
+		connectedCells: nil,
 	}
 	return g
 }
@@ -41,6 +43,10 @@ func (g *Game) UpdatePlayerPosition(playerId int, position pkg.Vec2) {
 		return
 	}
 	player.Position = position
+}
+
+func (g *Game) UpdateConnectedCells(connectedCells map[pkg.Vec2]struct{}) {
+	g.connectedCells = connectedCells
 }
 
 func (g *Game) UpdateCameraPosition(position pkg.Vec2) {
@@ -104,6 +110,13 @@ func (g *Game) Render(lineOffset int) int {
 		}
 	})
 	g.rasterScan(lineOffset, func(tuiPos, cellPos pkg.Vec2) {
+		if g.connectedCells != nil {
+			_, ok := g.connectedCells[cellPos]
+			if ok {
+				g.drawCell(tuiPos, '*')
+				return
+			}
+		}
 		cellId := g.board.GetCell(cellPos)
 		if cellId != -1 {
 			mark := g.GetPlayerMark(cellId)
