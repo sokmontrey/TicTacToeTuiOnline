@@ -12,7 +12,7 @@ const (
 	ServerErrPayload PayloadType = iota
 	ServerOkPayload
 	ServerJoinedPayload
-	ServerPlayerUpdatePayload
+	ServerPlayerPayload
 	ServerBoardUpdatePayload
 	ServerSyncPayload
 	ServerTerminationPayload

@@ -58,31 +58,41 @@ func (m *GameRoom) Render() {
 func (m *GameRoom) Update(msg pageMsg.PageMsg) Command {
 	m.displayMsg = ""
 	switch msg := msg.(type) {
-	case payload.JoinedPayload:
-		m.displayMsg = fmt.Sprintf("Player %d joined", msg.PlayerId)
-	case payload.OkPayload:
-		m.displayMsg = msg.Value
-	case payload.ErrPayload:
-		m.displayMsg = "Error: " + msg.Value
-	case payload.PlayerPayload:
-		playerId := msg.PlayerId
-		position := msg.Position
-		m.game.UpdatePlayerPosition(playerId, position, m.playerId)
-	case payload.BoardUpdatePayload:
-		m.game.UpdateBoard(msg.Cell.CellPos, msg.Cell.CellId)
-		m.game.UpdateTurn(msg.NextTurn)
-	case payload.TerminationPayload:
-		m.displayMsg = fmt.Sprintf("Player %d wins!", msg.WinnerId)
-		m.game.UpdateConnectedCells(msg.GetConnectedCellsMap())
-	case payload.SyncPayload:
-		m.playerId = msg.CurrentPlayerId
-		for _, p := range msg.PlayerPositions {
+	case payload.RawPayload:
+		switch msg.Type {
+		case payload.ServerJoinedPayload:
+			p := msg.ToJoinedPayload()
+			m.displayMsg = fmt.Sprintf("Player %d joined", p.PlayerId)
+		case payload.ServerOkPayload:
+			p := msg.ToOkPayload()
+			m.displayMsg = p.Value
+		case payload.ServerErrPayload:
+			p := msg.ToErrPayload()
+			m.displayMsg = "Error: " + p.Value
+		case payload.ServerPlayerPayload:
+			p := msg.ToPlayerPayload()
 			m.game.UpdatePlayerPosition(p.PlayerId, p.Position, m.playerId)
+		case payload.ServerBoardUpdatePayload:
+			p := msg.ToBoardUpdatePayload()
+			m.game.UpdateBoard(p.Cell.CellPos, p.Cell.CellId)
+			m.game.UpdateTurn(p.NextTurn)
+		case payload.ServerTerminationPayload:
+			p := msg.ToTerminationPayload()
+			m.displayMsg = fmt.Sprintf("Player %d wins!", p.WinnerId)
+			m.game.UpdateConnectedCells(p.GetConnectedCellsMap())
+		case payload.ServerSyncPayload:
+			p := msg.ToSyncUpdatePayload()
+			m.playerId = p.CurrentPlayerId
+			for _, p := range p.PlayerPositions {
+				m.game.UpdatePlayerPosition(p.PlayerId, p.Position, m.playerId)
+			}
+			for _, c := range p.CellPositions {
+				m.game.UpdateBoard(c.CellPos, c.CellId)
+			}
+			m.game.UpdateTurn(p.CurrentTurn)
+		default:
+			return NoneCommand
 		}
-		for _, c := range msg.CellPositions {
-			m.game.UpdateBoard(c.CellPos, c.CellId)
-		}
-		m.game.UpdateTurn(msg.CurrentTurn)
 	case pageMsg.KeyMsg:
 		switch msg.Key {
 		case keyboard.KeyEsc, keyboard.KeyCtrlC:
@@ -126,28 +136,17 @@ func (m *GameRoom) connectAndListenToServer() {
 			m.pageManager.msg <- pageMsg.NewErrMsg("Connection closed")
 			return
 		}
+
 		var rawPayload payload.RawPayload
 		err = json.Unmarshal(msg, &rawPayload)
 		if err != nil {
 			m.pageManager.msg <- pageMsg.NewErrMsg("Unable to parse server response")
 		}
 
-		switch rawPayload.Type {
-		case payload.ServerJoinedPayload:
-			m.pageManager.msg <- rawPayload.ToJoinedPayload()
-		case payload.ServerErrPayload:
-			m.pageManager.msg <- rawPayload.ToErrPayload()
-		case payload.ServerOkPayload:
-			m.pageManager.msg <- rawPayload.ToOkPayload()
-		case payload.ServerPlayerUpdatePayload:
-			m.pageManager.msg <- rawPayload.ToPlayerPayload()
-		case payload.ServerBoardUpdatePayload:
-			m.pageManager.msg <- rawPayload.ToBoardUpdatePayload()
-		case payload.ServerSyncPayload:
-			m.pageManager.msg <- rawPayload.ToSyncUpdatePayload()
-		case payload.ServerTerminationPayload:
-			m.pageManager.msg <- rawPayload.ToTerminationPayload()
-		default:
+		if rawPayload.Type == payload.NonePayload {
+			continue
 		}
+
+		m.pageManager.msg <- rawPayload
 	}
 }

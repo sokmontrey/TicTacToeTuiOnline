@@ -11,7 +11,7 @@ type PlayerPayload struct {
 }
 
 func NewPlayerPayload(playerId int, position pkg.Vec2) RawPayload {
-	return NewPayload(ServerPlayerUpdatePayload, PlayerPayload{
+	return NewPayload(ServerPlayerPayload, PlayerPayload{
 		PlayerId: playerId,
 		Position: position,
 	})
