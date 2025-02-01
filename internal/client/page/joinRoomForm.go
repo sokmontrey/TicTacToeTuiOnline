@@ -25,6 +25,13 @@ func NewJoinRoomForm(pm *PageManager) *JoinRoomForm {
 func (m *JoinRoomForm) Init() {
 }
 
+func (m *JoinRoomForm) Render() {
+	fmt.Print("\033[H\033[2J")
+	fmt.Println("AddClient room")
+	fmt.Printf("Room id (4 digits number): %s_ \n", m.roomId)
+	fmt.Printf("%s\n", m.msg)
+}
+
 func (m *JoinRoomForm) Update(msg pageMsg.PageMsg) Command {
 	m.msg = ""
 	switch msg := msg.(type) {
@@ -60,11 +67,4 @@ func (m *JoinRoomForm) deleteChar() {
 		return
 	}
 	m.roomId = m.roomId[:len(m.roomId)-1]
-}
-
-func (m *JoinRoomForm) View() string {
-	s := "Join room\n\n"
-	s += fmt.Sprintf("Room id (4 digits number): %s_ \n", m.roomId)
-	s += fmt.Sprintf("%s                                \n", m.msg)
-	return s
 }

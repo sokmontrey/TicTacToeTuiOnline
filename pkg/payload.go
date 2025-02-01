@@ -11,10 +11,47 @@ type PayloadType byte
 
 type MoveCode byte
 
+type PlayerUpdate struct {
+	PlayerId int  `json:"playerId"`
+	Position Vec2 `json:"position"`
+}
+
+type CellUpdate struct {
+	CellPos Vec2 `json:"cellPos"`
+	CellId  int  `json:"cellId"`
+}
+
+type BoardUpdate struct {
+	Cell     CellUpdate `json:"cell"`
+	NextTurn int        `json:"nextTurn"`
+}
+
+type SyncUpdate struct {
+	PlayerPositions []PlayerUpdate `json:"playerPositions"`
+	CellPositions   []CellUpdate   `json:"cellPositions"`
+	CurrentTurn     int            `json:"currentTurn"`
+	CurrentPlayerId int            `json:"currentPlayerId"`
+}
+
+type JoinedUpdate struct {
+	PlayerId int `json:"playerId"`
+}
+
+type TerminationUpdate struct {
+	ConnectedCells []Vec2 `json:"connectedCells"`
+	WinnerId       int    `json:"winnerId"`
+}
+
 const (
 	ServerErrPayload PayloadType = iota
 	ServerOkPayload
+	ServerSyncPayload
+	ServerPositionPayload
+	ServerJoinedPayload
+	ServerTerminationPayload
+	ServerBoardUpdatePayload
 	ClientMovePayload
+	NonePayload
 )
 
 const (
@@ -48,12 +85,61 @@ func NewPayload(payloadType PayloadType, data any) Payload {
 	}
 }
 
+func NewNonePayload() Payload {
+	return NewPayload(NonePayload, nil)
+}
+
+func NewSyncPayload(playerPositions []PlayerUpdate,
+	cellPositions []CellUpdate,
+	currentTurn int,
+	currentPlayerId int,
+) Payload {
+	return NewPayload(ServerSyncPayload, SyncUpdate{
+		PlayerPositions: playerPositions,
+		CellPositions:   cellPositions,
+		CurrentTurn:     currentTurn,
+		CurrentPlayerId: currentPlayerId,
+	})
+}
+
+func NewPositionUpdatePayload(playerId int, position Vec2) Payload {
+	return NewPayload(ServerPositionPayload, PlayerUpdate{playerId, position})
+}
+
+func NewJoinedUpdatePayload(playerId int) Payload {
+	return NewPayload(ServerJoinedPayload, JoinedUpdate{
+		PlayerId: playerId,
+	})
+}
+
+func NewBoardUpdatePayload(cellPos Vec2, cellId int, nextTurn int) Payload {
+	return NewPayload(ServerBoardUpdatePayload, BoardUpdate{
+		Cell: CellUpdate{
+			CellPos: cellPos,
+			CellId:  cellId,
+		},
+		NextTurn: nextTurn,
+	})
+}
+
+func NewTerminationPayload(winnerId int, connectedCells map[Vec2]struct{}) Payload {
+	connectedCellsArr := make([]Vec2, len(connectedCells))
+	for v := range connectedCells {
+		connectedCellsArr = append(connectedCellsArr, v)
+	}
+	return NewPayload(ServerTerminationPayload, TerminationUpdate{
+		WinnerId:       winnerId,
+		ConnectedCells: connectedCellsArr,
+	})
+}
+
 func CharToMoveCode(char rune) MoveCode {
 	mapCharToMoveCode := map[rune]MoveCode{
 		'w': MoveCodeUp,
 		's': MoveCodeDown,
 		'a': MoveCodeLeft,
 		'd': MoveCodeRight,
+		' ': MoveCodeConfirm,
 	}
 	moveCode, ok := mapCharToMoveCode[char]
 	if ok {
@@ -68,6 +154,8 @@ func KeyToMoveCode(key keyboard.Key) MoveCode {
 		keyboard.KeyArrowDown:  MoveCodeDown,
 		keyboard.KeyArrowLeft:  MoveCodeLeft,
 		keyboard.KeyArrowRight: MoveCodeRight,
+		keyboard.KeyEnter:      MoveCodeConfirm,
+		keyboard.KeySpace:      MoveCodeConfirm,
 	}
 	moveCode, ok := mapKeyToMoveCode[key]
 	if ok {

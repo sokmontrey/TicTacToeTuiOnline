@@ -1,8 +1,8 @@
 package page
 
 import (
-	tm "github.com/buger/goterm"
 	"github.com/eiannone/keyboard"
+	"github.com/nsf/termbox-go"
 	"github.com/sokmontrey/TicTacToeTuiOnline/internal/client/pageMsg"
 )
 
@@ -19,6 +19,8 @@ func NewPageManager() *PageManager {
 }
 
 func (pm *PageManager) Init() {
+	termbox.Init()
+	//termbox.SetInputMode(termbox.InputEsc)
 	go pm.listenForKeyboardInput()
 }
 
@@ -28,6 +30,7 @@ func (pm *PageManager) listenForKeyboardInput() {
 	}
 	defer func() {
 		_ = keyboard.Close()
+		termbox.Close()
 	}()
 
 	for {
@@ -41,9 +44,7 @@ func (pm *PageManager) listenForKeyboardInput() {
 
 func (pm *PageManager) Run() {
 	for {
-		tm.MoveCursor(1, 1)
-		tm.Println(pm.currentPage.View())
-		tm.Flush()
+		pm.currentPage.Render()
 		select {
 		case msg := <-pm.msg:
 			pageCmd := pm.currentPage.Update(msg)
@@ -58,25 +59,21 @@ func (pm *PageManager) Run() {
 }
 
 func (pm *PageManager) ToMainMenu() {
-	tm.Clear()
 	pm.currentPage = NewMainMenu(pm)
 	pm.currentPage.Init()
 }
 
 func (pm *PageManager) ToGameRoom(roomId string) {
-	tm.Clear()
 	pm.currentPage = NewGameRoom(pm, roomId)
 	pm.currentPage.Init()
 }
 
 func (pm *PageManager) ToCreateRoomForm() {
-	tm.Clear()
 	pm.currentPage = NewCreateRoomForm(pm)
 	pm.currentPage.Init()
 }
 
 func (pm *PageManager) ToJoinRoomForm() {
-	tm.Clear()
 	pm.currentPage = NewJoinRoomForm(pm)
 	pm.currentPage.Init()
 }

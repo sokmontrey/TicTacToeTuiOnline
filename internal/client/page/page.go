@@ -1,6 +1,8 @@
 package page
 
-import "github.com/sokmontrey/TicTacToeTuiOnline/internal/client/pageMsg"
+import (
+	"github.com/sokmontrey/TicTacToeTuiOnline/internal/client/pageMsg"
+)
 
 type Command int
 
@@ -12,5 +14,5 @@ const (
 type Page interface {
 	Init()
 	Update(msg pageMsg.PageMsg) Command
-	View() string
+	Render()
 }

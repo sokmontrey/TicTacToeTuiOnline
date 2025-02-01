@@ -5,40 +5,76 @@ import (
 	"fmt"
 	"github.com/eiannone/keyboard"
 	"github.com/gorilla/websocket"
+	"github.com/nsf/termbox-go"
+	"github.com/sokmontrey/TicTacToeTuiOnline/internal/client/clientGame"
 	"github.com/sokmontrey/TicTacToeTuiOnline/internal/client/pageMsg"
 	"github.com/sokmontrey/TicTacToeTuiOnline/pkg"
 )
 
 type GameRoom struct {
 	pageManager *PageManager
+	playerId    int
 	roomId      string
-	msg         string
+	displayMsg  string
 	conn        *websocket.Conn
-	moveChan    chan pkg.Payload
+	move        chan pkg.Payload
+	game        *clientGame.Game
 }
 
 func NewGameRoom(pm *PageManager, roomId string) *GameRoom {
 	return &GameRoom{
 		pageManager: pm,
+		playerId:    1,
 		roomId:      roomId,
-		msg:         "",
-		moveChan:    make(chan pkg.Payload),
+		displayMsg:  "",
+		move:        make(chan pkg.Payload),
+		game:        clientGame.NewGame(1),
 	}
 }
 
 func (m *GameRoom) Init() {
 	go m.connectAndListenToServer()
-	go m.listenForMoves()
+	go m.listenForMove()
+	termbox.Clear(termbox.ColorDefault, termbox.ColorDefault)
+}
+
+func (m *GameRoom) Render() {
+	pkg.TUIWriteText(0, "TicTacToeTui")
+	pkg.TUIWriteText(1, fmt.Sprintf("Room id: %s", m.roomId))
+	currentTurn := m.game.GetCurrentTurn()
+	if currentTurn == m.playerId {
+		pkg.TUIWriteText(2, "Your turn!")
+	} else {
+		currentTurnMark := m.game.GetPlayerMark(currentTurn)
+		bracket := m.game.GetPlayerCursor(currentTurn)
+		pkg.TUIWriteText(2, fmt.Sprintf("Turn: %c%c%c", bracket.Left, currentTurnMark, bracket.Right))
+	}
+	pkg.TUIWriteText(3, m.displayMsg)
+	m.game.Render(4)
+	termbox.Flush()
 }
 
 func (m *GameRoom) Update(msg pageMsg.PageMsg) Command {
-	m.msg = ""
+	m.displayMsg = ""
 	switch msg := msg.(type) {
+	case pageMsg.JoinedMsg:
+		m.displayMsg = fmt.Sprintf("Player %d joined", msg.PlayerId)
+	case pageMsg.SyncMsg:
+		m.playerId = msg.CurrentPlayerId
+		for _, p := range msg.PlayerPositions {
+			m.game.UpdatePlayerPosition(p.PlayerId, p.Position)
+			if p.PlayerId == m.playerId {
+				m.game.UpdateCameraPosition(p.Position)
+			}
+		}
+		for _, c := range msg.CellPositions {
+			m.game.UpdateBoard(c.CellPos, c.CellId)
+		}
+		m.game.UpdateTurn(msg.CurrentTurn)
 	case pageMsg.OkMsg:
-		m.msg = msg.Data.(string)
+		m.displayMsg = msg.Data.(string)
 	case pageMsg.ErrMsg:
-		m.msg = "Error: " + msg.Data.(string)
-		return QuitCommand // TODO: handle reconnection
+		m.displayMsg = "Error: " + msg.Data.(string)
 	case pageMsg.KeyMsg:
 		switch msg.Key {
 		case keyboard.KeyEsc, keyboard.KeyCtrlC:
@@ -46,25 +82,31 @@ func (m *GameRoom) Update(msg pageMsg.PageMsg) Command {
 		}
 		moveCode := msg.ToMoveCode()
 		if moveCode != pkg.MoveCodeNone {
-			m.moveChan <- pkg.NewPayload(pkg.ClientMovePayload, moveCode)
+			m.move <- pkg.NewPayload(pkg.ClientMovePayload, moveCode)
 		}
-		return NoneCommand
+	case pageMsg.PlayerPositionMsg:
+		playerId := msg.PlayerId
+		position := msg.Position
+		m.game.UpdatePlayerPosition(playerId, position)
+		if playerId == m.playerId {
+			m.game.UpdateCameraPosition(position)
+		}
+	case pageMsg.BoardUpdateMsg:
+		m.game.UpdateBoard(msg.CellPos, msg.CellId)
+		m.game.UpdateTurn(msg.NextTurn)
+	case pageMsg.TerminationMsg:
+		m.displayMsg = fmt.Sprintf("Player %d wins!", msg.WinnerId)
+		m.game.UpdateConnectedCells(msg.ConnectedCells)
 	}
 	return NoneCommand
 }
 
-func (m *GameRoom) View() string {
-	s := "Game room\n\n"
-	s += fmt.Sprintf("Room id: %s\n", m.roomId)
-	s += fmt.Sprintf("%s\n", m.msg)
-	return s
-}
-
-func (m *GameRoom) listenForMoves() {
+func (m *GameRoom) listenForMove() {
 	for {
 		select {
-		case msg := <-m.moveChan:
-			if err := m.conn.WriteJSON(msg); err != nil {
+		case move := <-m.move:
+			err := move.WsSend(m.conn)
+			if err != nil {
 				m.pageManager.msg <- pageMsg.NewErrMsg("Unable to send message to the server")
 				return
 			}
@@ -94,12 +136,47 @@ func (m *GameRoom) connectAndListenToServer() {
 		if err != nil {
 			m.pageManager.msg <- pageMsg.NewErrMsg("Unable to parse server response")
 		}
-		var msgStr string
-		json.Unmarshal(payload.Data, &msgStr)
-		if payload.Type == pkg.ServerErrPayload {
+		switch payload.Type {
+		case pkg.ServerJoinedPayload:
+			var joinedUpdate pkg.JoinedUpdate
+			json.Unmarshal(payload.Data, &joinedUpdate)
+			m.pageManager.msg <- pageMsg.NewJoinedMsg(joinedUpdate.PlayerId)
+		case pkg.ServerErrPayload:
+			var msgStr string
+			json.Unmarshal(payload.Data, &msgStr)
 			m.pageManager.msg <- pageMsg.NewErrMsg(msgStr)
-		} else if payload.Type == pkg.ServerOkPayload {
+		case pkg.ServerOkPayload:
+			var msgStr string
+			json.Unmarshal(payload.Data, &msgStr)
 			m.pageManager.msg <- pageMsg.NewOkMsg(msgStr)
-		} // TODO: Game update payload
+		case pkg.ServerPositionPayload:
+			var positionUpdate pkg.PlayerUpdate
+			json.Unmarshal(payload.Data, &positionUpdate)
+			m.pageManager.msg <- pageMsg.NewPositionMsg(positionUpdate.PlayerId, positionUpdate.Position)
+		case pkg.ServerSyncPayload:
+			var syncData pkg.SyncUpdate
+			json.Unmarshal(payload.Data, &syncData)
+			m.pageManager.msg <- pageMsg.NewSyncMsg( // TODO; for each of these, pass payload data directly
+				syncData.PlayerPositions,
+				syncData.CellPositions,
+				syncData.CurrentTurn,
+				syncData.CurrentPlayerId,
+			)
+		case pkg.ServerBoardUpdatePayload:
+			var boardUpdate pkg.BoardUpdate
+			json.Unmarshal(payload.Data, &boardUpdate)
+			m.pageManager.msg <- pageMsg.NewBoardUpdateMsg(
+				boardUpdate.Cell.CellPos,
+				boardUpdate.Cell.CellId,
+				boardUpdate.NextTurn,
+			)
+		case pkg.ServerTerminationPayload:
+			var terminationUpdate pkg.TerminationUpdate
+			json.Unmarshal(payload.Data, &terminationUpdate)
+			m.pageManager.msg <- pageMsg.NewTerminationMsg(
+				terminationUpdate.WinnerId,
+				terminationUpdate.ConnectedCells,
+			)
+		}
 	}
 }

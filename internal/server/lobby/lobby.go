@@ -1,4 +1,4 @@
-package network
+package lobby
 
 import (
 	"errors"
@@ -86,14 +86,14 @@ func (l *Lobby) handleCreateRoom(c *gin.Context) {
 		return
 	}
 	l.mu.Lock()
+	defer l.mu.Unlock()
 	id := l.generateRoomId()
 	room := NewRoom(numPlayers, id)
 	l.rooms[id] = room
-	go room.Start()
+	room.Start()
 	log.Printf("Created room %s", id)
 	payload := pkg.NewPayload(pkg.ServerOkPayload, id)
 	payload.HttpSend(http.StatusOK, c)
-	l.mu.Unlock()
 }
 
 // ============================================================================

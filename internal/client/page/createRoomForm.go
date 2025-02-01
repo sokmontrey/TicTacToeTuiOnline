@@ -31,6 +31,13 @@ func NewCreateRoomForm(pm *PageManager) *CreateRoomForm {
 func (m *CreateRoomForm) Init() {
 }
 
+func (m *CreateRoomForm) Render() {
+	fmt.Print("\033[H\033[2J")
+	fmt.Println("Create room")
+	fmt.Printf("Number of players: < %d >\n", m.numPlayers)
+	fmt.Printf("%s\n", m.msg)
+}
+
 func (m *CreateRoomForm) Update(msg pageMsg.PageMsg) Command {
 	m.msg = ""
 	switch msg := msg.(type) {
@@ -91,11 +98,4 @@ func (m *CreateRoomForm) requestCreateRoom() (string, error) {
 	var roomId string
 	err = json.Unmarshal(payload.Data, &roomId)
 	return roomId, err
-}
-
-func (m *CreateRoomForm) View() string {
-	s := "Create room\n\n"
-	s += fmt.Sprintf("Number of players: < %d >\n", m.numPlayers)
-	s += fmt.Sprintf("%s\n", m.msg)
-	return s
 }
