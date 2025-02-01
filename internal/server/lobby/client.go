@@ -41,13 +41,13 @@ func (c *Client) listenForPayload() {
 			log.Printf("Error reading message from client: \"%s\", for room %s", err.Error(), c.room.id)
 			return
 		}
-		var payload payload.RawPayload
-		err = json.Unmarshal(msg, &payload)
+		var rawPayload payload.RawPayload
+		err = json.Unmarshal(msg, &rawPayload)
 		if err != nil {
-			log.Printf("Error unmarshaling payload: \"%s\", for room %s", err.Error(), c.room.id)
+			log.Printf("Error unmarshaling rawPayload: \"%s\", for room %s", err.Error(), c.room.id)
 			return
 		}
-		stop := c.routePayload(payload)
+		stop := c.routePayload(rawPayload)
 		if stop {
 			return
 		}
@@ -66,6 +66,8 @@ func (c *Client) routePayload(rawPayload payload.RawPayload) bool {
 		if moveCode != payload.MoveCodeNone {
 			c.room.move <- ClientMove{c.clientId, moveCode}
 		}
+	default:
+		return false
 	}
 	return false
 }
