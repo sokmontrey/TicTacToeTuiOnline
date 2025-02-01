@@ -84,6 +84,18 @@ func (g *Game) GetPlayerCursor(playerId int) PlayerBracket {
 	return PlayerBracket{'|', '|'}
 }
 
+func (g *Game) GetPlayerColor(playerId int) termbox.Attribute {
+	var mapIdToColor = map[int]termbox.Attribute{
+		1: termbox.ColorRed,
+		2: termbox.ColorBlue,
+		3: termbox.ColorGreen,
+	}
+	if color, ok := mapIdToColor[playerId]; ok {
+		return color
+	}
+	return termbox.ColorDefault
+}
+
 func (g *Game) GetPlayerMark(playerId int) PlayerMark {
 	var mapIdToMark = map[int]PlayerMark{
 		1: 'X',
@@ -99,31 +111,33 @@ func (g *Game) GetPlayerMark(playerId int) PlayerMark {
 func (g *Game) Render(lineOffset int) int {
 	g.rasterScan(lineOffset, func(tuiPos, cellPos pkg.Vec2) {
 		if cellPos == pkg.NewVec2(0, 0) {
-			g.clearCell(tuiPos, '+')
+			g.clearCell(tuiPos, '+', termbox.ColorDarkGray)
 		} else {
-			g.clearCell(tuiPos, '.')
+			g.clearCell(tuiPos, '.', termbox.ColorDarkGray)
 		}
 	})
 	playerCells := g.getPlayerCells()
 	g.rasterScan(lineOffset, func(tuiPos, cellPos pkg.Vec2) {
 		id, ok := playerCells[cellPos]
 		if ok {
-			mark := g.GetPlayerCursor(id)
-			g.drawCursor(tuiPos, mark.Left, mark.Right)
+			cursor := g.GetPlayerCursor(id)
+			color := g.GetPlayerColor(id)
+			g.drawCursor(tuiPos, cursor.Left, cursor.Right, color)
 		}
 	})
 	g.rasterScan(lineOffset, func(tuiPos, cellPos pkg.Vec2) {
 		if g.connectedCells != nil {
 			_, ok := g.connectedCells[cellPos]
 			if ok {
-				g.drawCell(tuiPos, '*')
+				g.drawCell(tuiPos, '*', termbox.ColorYellow)
 				return
 			}
 		}
 		cellId := g.board.GetCell(cellPos)
 		if cellId != -1 {
 			mark := g.GetPlayerMark(cellId)
-			g.drawCell(tuiPos, rune(mark))
+			color := g.GetPlayerColor(cellId)
+			g.drawCell(tuiPos, rune(mark), color)
 		}
 	})
 	return lineOffset + g.radius*2 + 1
@@ -139,22 +153,22 @@ func (g *Game) rasterScan(lineOffset int, f func(tuiPos, cellPos pkg.Vec2)) {
 	}
 }
 
-func (g *Game) clearCell(pos pkg.Vec2, mark rune) {
+func (g *Game) clearCell(pos pkg.Vec2, mark rune, color termbox.Attribute) {
 	pos.X = pos.X*2 + 1
-	termbox.SetCell(pos.X-1, pos.Y, ' ', termbox.ColorDefault, termbox.ColorDefault)
-	termbox.SetCell(pos.X, pos.Y, mark, termbox.ColorDarkGray, termbox.ColorDefault)
-	termbox.SetCell(pos.X+1, pos.Y, ' ', termbox.ColorDefault, termbox.ColorDefault)
+	termbox.SetCell(pos.X-1, pos.Y, ' ', color, termbox.ColorDefault)
+	termbox.SetCell(pos.X, pos.Y, mark, color, termbox.ColorDefault)
+	termbox.SetCell(pos.X+1, pos.Y, ' ', color, termbox.ColorDefault)
 }
 
-func (g *Game) drawCursor(pos pkg.Vec2, left, right rune) {
+func (g *Game) drawCursor(pos pkg.Vec2, left, right rune, color termbox.Attribute) {
 	pos.X = pos.X*2 + 1
-	termbox.SetCell(pos.X-1, pos.Y, left, termbox.ColorDefault, termbox.ColorDefault)
-	termbox.SetCell(pos.X+1, pos.Y, right, termbox.ColorDefault, termbox.ColorDefault)
+	termbox.SetCell(pos.X-1, pos.Y, left, color, termbox.ColorDefault)
+	termbox.SetCell(pos.X+1, pos.Y, right, color, termbox.ColorDefault)
 }
 
-func (g *Game) drawCell(pos pkg.Vec2, mark rune) {
+func (g *Game) drawCell(pos pkg.Vec2, mark rune, color termbox.Attribute) {
 	pos.X = pos.X*2 + 1
-	termbox.SetCell(pos.X, pos.Y, mark, termbox.ColorDefault, termbox.ColorDefault)
+	termbox.SetCell(pos.X, pos.Y, mark, color, termbox.ColorDefault)
 }
 
 func (g *Game) GetCurrentTurn() int {
