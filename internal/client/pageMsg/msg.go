@@ -2,7 +2,6 @@ package pageMsg
 
 import (
 	"github.com/eiannone/keyboard"
-	"github.com/sokmontrey/TicTacToeTuiOnline/payload"
 )
 
 type PageMsg any
@@ -30,12 +29,4 @@ func NewErrMsg(data any) ErrMsg {
 type KeyMsg struct {
 	Char rune
 	Key  keyboard.Key
-}
-
-func (k KeyMsg) ToMoveCode() payload.MoveCode {
-	moveCode := payload.KeyToMoveCode(k.Key)
-	if moveCode == payload.MoveCodeNone {
-		moveCode = payload.CharToMoveCode(k.Char)
-	}
-	return moveCode
 }

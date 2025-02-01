@@ -88,9 +88,9 @@ func (m *GameRoom) Update(msg pageMsg.PageMsg) Command {
 		case keyboard.KeyEsc, keyboard.KeyCtrlC:
 			return QuitCommand
 		}
-		moveCode := msg.ToMoveCode()
+		moveCode := payload.KeyMsgToMoveCode(msg)
 		if moveCode != payload.MoveCodeNone {
-			m.move <- payload.NewPayload(payload.ClientMovePayload, moveCode)
+			m.move <- payload.NewMoveCodePayload(moveCode)
 		}
 	}
 	return NoneCommand

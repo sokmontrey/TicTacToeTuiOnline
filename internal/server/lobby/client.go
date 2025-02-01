@@ -56,7 +56,7 @@ func (c *Client) listenForPayload() {
 
 func (c *Client) routePayload(rawPayload payload.RawPayload) bool {
 	switch rawPayload.Type {
-	case payload.ClientMovePayload:
+	case payload.ClientMoveCodePayload:
 		var moveCode payload.MoveCode
 		err := json.Unmarshal(rawPayload.Data, &moveCode)
 		if err != nil {
