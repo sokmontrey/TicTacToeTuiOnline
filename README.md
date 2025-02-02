@@ -8,7 +8,24 @@ An infinite board online multiplayer tic tac toe game directly in your terminal.
 
 (Coming soon)
 
-## Manual 
+## Go Install
+
+```bash
+go install github.com/sokmontrey/TicTacToeTuiOnline/cmd/client@latest
+```
+
+Run:
+
+```bash
+client
+```
+
+## From Source
+
+```bash
+git clone https://github.com/sokmontrey/TicTacToeTuiOnline.git
+cd TicTacToeTuiOnline
+```
 
 Build (go 1.23.3 required):
 
