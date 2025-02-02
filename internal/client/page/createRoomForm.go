@@ -70,6 +70,8 @@ func (m *CreateRoomForm) Update(msg pageMsg.PageMsg) Command {
 			m.updateNumPlayers(1)
 		case 's', 'a':
 			m.updateNumPlayers(-1)
+		case 'q':
+			m.pageManager.ToMainMenu()
 		}
 	}
 	return NoneCommand

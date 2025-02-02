@@ -54,6 +54,8 @@ func (m *JoinRoomForm) Update(msg pageMsg.PageMsg) Command {
 		}
 		if msg.Char >= '0' && msg.Char <= '9' {
 			m.writeChar(msg.Char)
+		} else if msg.Char == 'q' {
+			m.pageManager.ToMainMenu()
 		}
 	}
 	return NoneCommand
