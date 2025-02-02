@@ -109,7 +109,7 @@ func (r *Room) RemoveClient(clientId int) {
 }
 
 func (r *Room) countdownToDelete() {
-	time.Sleep(time.Second * 3) // 1 minute to delete
+	time.Sleep(time.Second * 60) // 1 minute to delete
 	r.mu.Lock()
 	if len(r.clients) == 0 {
 		r.onDelete()

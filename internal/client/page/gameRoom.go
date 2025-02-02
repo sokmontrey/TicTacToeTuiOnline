@@ -116,8 +116,7 @@ func (m *GameRoom) Update(msg pageMsg.PageMsg) Command {
 }
 
 func (m *GameRoom) connectAndListenToServer() {
-	port := "4321"
-	url := fmt.Sprintf("ws://0.0.0.0:%s/ws/join?room-id=%s", port, m.roomId)
+	url := fmt.Sprintf("wss://%s/ws/join?room-id=%s", m.pageManager.Url, m.roomId)
 	conn, _, err := websocket.DefaultDialer.Dial(url, nil)
 	if err != nil {
 		m.pageManager.msg <- pageMsg.NewCloseMsg("Unable to connect to the server. Try again later")
