@@ -28,7 +28,7 @@ func NewGame(numPlayers int) *Game {
 	g := &Game{
 		numPlayers:     numPlayers,
 		players:        make(map[int]*game.Player),
-		radius:         13,
+		radius:         10,
 		padding:        1,
 		currentTurn:    1,
 		cameraPos:      pkg.NewVec2(0, 0),
