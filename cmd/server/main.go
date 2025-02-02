@@ -5,6 +5,5 @@ import (
 )
 
 func main() {
-	lobby := lobby.NewLobby()
-	lobby.Start("4321")
+	lobby.NewLobby().Start("4321")
 }
