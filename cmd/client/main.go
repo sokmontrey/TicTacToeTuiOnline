@@ -6,7 +6,7 @@ import (
 
 func main() {
 	pageManager := page.NewPageManager()
-	pageManager.ToMainMenu()
 	pageManager.Init()
+	pageManager.ToMainMenu()
 	pageManager.Run()
 }

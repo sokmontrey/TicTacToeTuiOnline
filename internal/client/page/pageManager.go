@@ -20,7 +20,6 @@ func NewPageManager() *PageManager {
 
 func (pm *PageManager) Init() {
 	termbox.Init()
-	//termbox.SetInputMode(termbox.InputEsc)
 	go pm.listenForKeyboardInput()
 }
 

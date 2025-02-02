@@ -38,7 +38,7 @@ func (m *GameRoom) Init() {
 }
 
 func (m *GameRoom) Render() {
-	pkg.TUIWriteText(1, "TicTac ToeTui")
+	pkg.TUIWriteText(1, "TicTacToe Tui")
 	pkg.TUIWriteText(2, fmt.Sprintf("Room id: %s", m.roomId))
 	currentTurn := m.game.GetCurrentTurn()
 	if currentTurn == m.playerId {

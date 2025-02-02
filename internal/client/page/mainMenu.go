@@ -3,7 +3,9 @@ package page
 import (
 	"fmt"
 	"github.com/eiannone/keyboard"
+	"github.com/nsf/termbox-go"
 	"github.com/sokmontrey/TicTacToeTuiOnline/internal/client/pageMsg"
+	"github.com/sokmontrey/TicTacToeTuiOnline/pkg"
 )
 
 type MenuOption struct {
@@ -15,6 +17,7 @@ type MainMenu struct {
 	pageManager  *PageManager
 	options      []MenuOption
 	optionCursor int
+	msg          string
 }
 
 func NewMainMenu(pm *PageManager) *MainMenu {
@@ -25,22 +28,28 @@ func NewMainMenu(pm *PageManager) *MainMenu {
 			{"Create a room", pm.ToCreateRoomForm},
 			{"Join a room", pm.ToJoinRoomForm},
 		},
+		msg: "",
 	}
+}
+
+func (m *MainMenu) SetMsg(msg string) {
+	m.msg = msg
 }
 
 func (m *MainMenu) Init() {
+	termbox.Clear(termbox.ColorDefault, termbox.ColorDefault)
 }
 
 func (m *MainMenu) Render() {
-	fmt.Print("\033[H\033[2J")
-	fmt.Println("TicTacToe TUI")
+	pkg.TUIWriteText(1, "TicTacToe Tui")
 	for i, option := range m.options {
 		if i == m.optionCursor {
-			fmt.Printf("[%s]\n", option.Name)
+			pkg.TUIWriteTextWithColor(2+i, fmt.Sprintf("[%s]", option.Name), termbox.ColorGreen)
 		} else {
-			fmt.Printf(" %s \n", option.Name)
+			pkg.TUIWriteTextWithColor(2+i, fmt.Sprintf(" %s ", option.Name), termbox.ColorDefault)
 		}
 	}
+	termbox.Flush()
 }
 
 func (m *MainMenu) Update(msg pageMsg.PageMsg) Command {
