@@ -62,7 +62,7 @@ func (l *Lobby) handleJoin(c *gin.Context) {
 	roomId := c.Query("room-id")
 	room, rp := l.GetRoom(roomId)
 	if l.resWsError(conn, rp) {
-		log.Printf("Client tried to join room %s, but it is full", roomId)
+		log.Printf("Client tried to join room %s, but it is not found", roomId)
 		return
 	}
 

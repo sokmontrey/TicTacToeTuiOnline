@@ -1,9 +1,9 @@
 ﻿package pageMsg
 
 type CloseMsg struct {
-	Value any
+	Value string
 }
 
-func NewCloseMsg(value any) CloseMsg {
+func NewCloseMsg(value string) CloseMsg {
 	return CloseMsg{value}
 }

@@ -62,6 +62,12 @@ func (pm *PageManager) ToMainMenu() {
 	pm.currentPage.Init()
 }
 
+func (pm *PageManager) ToMainMenuWithMsg(msg string) {
+	mm := NewMainMenu(pm)
+	pm.currentPage = mm
+	mm.InitWithMsg(msg)
+}
+
 func (pm *PageManager) ToGameRoom(roomId string) {
 	pm.currentPage = NewGameRoom(pm, roomId)
 	pm.currentPage.Init()

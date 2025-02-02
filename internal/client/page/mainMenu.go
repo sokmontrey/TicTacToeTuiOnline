@@ -17,7 +17,6 @@ type MainMenu struct {
 	pageManager  *PageManager
 	options      []MenuOption
 	optionCursor int
-	msg          string
 }
 
 func NewMainMenu(pm *PageManager) *MainMenu {
@@ -28,16 +27,17 @@ func NewMainMenu(pm *PageManager) *MainMenu {
 			{"Create a room", pm.ToCreateRoomForm},
 			{"Join a room", pm.ToJoinRoomForm},
 		},
-		msg: "",
 	}
-}
-
-func (m *MainMenu) SetMsg(msg string) {
-	m.msg = msg
 }
 
 func (m *MainMenu) Init() {
 	termbox.Clear(termbox.ColorDefault, termbox.ColorDefault)
+}
+
+func (m *MainMenu) InitWithMsg(msg string) {
+	termbox.Clear(termbox.ColorDefault, termbox.ColorDefault)
+	pkg.TUIWriteTextWithColor(0, msg, termbox.ColorRed)
+	termbox.Flush()
 }
 
 func (m *MainMenu) Render() {
@@ -49,7 +49,6 @@ func (m *MainMenu) Render() {
 			pkg.TUIWriteTextWithColor(2+i, fmt.Sprintf(" %s ", option.Name), termbox.ColorDefault)
 		}
 	}
-	pkg.TUIWriteTextWithColor(len(m.options)+2, m.msg, termbox.ColorRed)
 	termbox.Flush()
 }
 
