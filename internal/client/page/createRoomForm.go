@@ -87,7 +87,7 @@ func (m *CreateRoomForm) updateNumPlayers(delta int) {
 }
 
 func (m *CreateRoomForm) requestCreateRoom() (string, error) {
-	url := fmt.Sprintf("https://%s/create-room?num-players=%d", m.pageManager.Url, m.numPlayers)
+	url := fmt.Sprintf("https://%s/create-room?num-players=%d", m.pageManager.ServerAddr, m.numPlayers)
 	res, err := http.Get(url)
 	if err != nil || res.StatusCode != http.StatusOK {
 		return "", errors.New("unable to connect to the server. Try again later")

@@ -9,14 +9,14 @@ import (
 type PageManager struct {
 	currentPage Page
 	msg         chan pageMsg.PageMsg
-	Url         string
+	ServerAddr  string
 }
 
-func NewPageManager() *PageManager {
+func NewPageManager(serverAddr string) *PageManager {
 	return &PageManager{
 		currentPage: nil,
 		msg:         make(chan pageMsg.PageMsg),
-		Url:         "tictactoetuionline.onrender.com",
+		ServerAddr:  serverAddr,
 	}
 }
 
