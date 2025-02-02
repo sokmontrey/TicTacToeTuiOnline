@@ -91,7 +91,12 @@ func (l *Lobby) handleCreateRoom(c *gin.Context) {
 	l.mu.Lock()
 	defer l.mu.Unlock()
 	id := l.generateRoomId()
-	room := NewRoom(numPlayers, id)
+	room := NewRoom(numPlayers, id, func() {
+		l.mu.Lock()
+		defer l.mu.Unlock()
+		delete(l.rooms, id)
+		log.Printf("Deleted room %s because it is empty", id)
+	})
 	l.rooms[id] = room
 	room.Start()
 	log.Printf("Created room %s", id)

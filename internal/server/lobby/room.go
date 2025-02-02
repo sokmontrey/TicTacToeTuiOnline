@@ -6,6 +6,7 @@ import (
 	"github.com/sokmontrey/TicTacToeTuiOnline/internal/server/serverGame"
 	"github.com/sokmontrey/TicTacToeTuiOnline/payload"
 	"sync"
+	"time"
 )
 
 type Room struct {
@@ -15,15 +16,17 @@ type Room struct {
 	mu         sync.Mutex
 	move       chan ClientMove
 	game       *serverGame.Game
+	onDelete   func()
 }
 
-func NewRoom(numPlayers int, id string) *Room {
+func NewRoom(numPlayers int, id string, onDelete func()) *Room {
 	return &Room{
 		id:         id,
 		maxPlayers: numPlayers,
 		clients:    make(map[int]*Client),
 		move:       make(chan ClientMove, 10),
 		game:       serverGame.NewGame(numPlayers, 5),
+		onDelete:   onDelete,
 	}
 }
 
@@ -98,11 +101,20 @@ func (r *Room) AddClient(conn *websocket.Conn) int {
 
 func (r *Room) RemoveClient(clientId int) {
 	r.mu.Lock()
-	defer r.mu.Unlock()
 	delete(r.clients, clientId)
+	r.mu.Unlock()
 	str := fmt.Sprintf("Player %d left the room", clientId)
-	r.globalBroadcast(payload.NewOkPayload(str)) // TODO: left payload
-	//TODO: if room is empty, countdown to delete
+	r.globalBroadcast(payload.NewErrPayload(str)) // TODO: left payload
+	go r.countdownToDelete()
+}
+
+func (r *Room) countdownToDelete() {
+	time.Sleep(time.Second * 3) // 1 minute to delete
+	r.mu.Lock()
+	if len(r.clients) == 0 {
+		r.onDelete()
+	}
+	r.mu.Unlock()
 }
 
 // ============================================================================
