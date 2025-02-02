@@ -107,7 +107,7 @@ func (m *GameRoom) Update(msg pageMsg.PageMsg) Command {
 		}
 		err := payload.NewMoveCodePayload(moveCode).WsSend(m.conn)
 		if err != nil {
-			m.pageManager.msg <- pageMsg.NewErrMsg("Unable to send message to the server")
+			m.displayMsg = "Unable to send message to the server"
 		}
 	}
 	return NoneCommand
