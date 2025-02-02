@@ -109,6 +109,9 @@ func (m *GameRoom) Update(msg pageMsg.PageMsg) Command {
 		if err != nil {
 			m.displayMsg = "Unable to send message to the server"
 		}
+	case pageMsg.CloseMsg:
+		// TODO: pass error to the main menu
+		m.pageManager.ToMainMenu()
 	}
 	return NoneCommand
 }
@@ -119,7 +122,6 @@ func (m *GameRoom) connectAndListenToServer() {
 	conn, _, err := websocket.DefaultDialer.Dial(url, nil)
 	if err != nil {
 		m.pageManager.msg <- pageMsg.NewErrMsg("Unable to connect to the server. Try again later")
-		// TODO: handle reconnection
 		return
 	}
 	defer conn.Close()
@@ -127,20 +129,17 @@ func (m *GameRoom) connectAndListenToServer() {
 	for {
 		msgType, msg, err := conn.ReadMessage()
 		if err != nil || msgType == websocket.CloseMessage {
-			m.pageManager.msg <- pageMsg.NewErrMsg("Connection closed")
+			m.pageManager.msg <- pageMsg.NewCloseMsg("Connection closed. Try again later")
 			return
 		}
-
 		var rawPayload payload.RawPayload
 		err = json.Unmarshal(msg, &rawPayload)
 		if err != nil {
 			m.pageManager.msg <- pageMsg.NewErrMsg("Unable to parse server response")
 		}
-
 		if rawPayload.Type == payload.NonePayload {
 			continue
 		}
-
 		m.pageManager.msg <- rawPayload
 	}
 }
