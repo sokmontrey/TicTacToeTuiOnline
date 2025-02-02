@@ -49,6 +49,7 @@ func (m *MainMenu) Render() {
 			pkg.TUIWriteTextWithColor(2+i, fmt.Sprintf(" %s ", option.Name), termbox.ColorDefault)
 		}
 	}
+	pkg.TUIWriteTextWithColor(len(m.options)+2, m.msg, termbox.ColorRed)
 	termbox.Flush()
 }
 
