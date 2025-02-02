@@ -5,8 +5,10 @@ import (
 	"errors"
 	"fmt"
 	"github.com/eiannone/keyboard"
+	"github.com/nsf/termbox-go"
 	"github.com/sokmontrey/TicTacToeTuiOnline/internal/client/pageMsg"
 	"github.com/sokmontrey/TicTacToeTuiOnline/payload"
+	"github.com/sokmontrey/TicTacToeTuiOnline/pkg"
 	"net/http"
 )
 
@@ -29,13 +31,15 @@ func NewCreateRoomForm(pm *PageManager) *CreateRoomForm {
 }
 
 func (m *CreateRoomForm) Init() {
+	termbox.Clear(termbox.ColorDefault, termbox.ColorDefault)
 }
 
 func (m *CreateRoomForm) Render() {
-	fmt.Print("\033[H\033[2J")
-	fmt.Println("Create room")
-	fmt.Printf("Number of players: < %d >\n", m.numPlayers)
-	fmt.Printf("%s\n", m.msg)
+	pkg.TUIWriteText(1, "TicTacToe Tui")
+	pkg.TUIWriteText(2, "Creating a room")
+	pkg.TUIWriteText(3, fmt.Sprintf("Number of players: < %d >", m.numPlayers))
+	pkg.TUIWriteTextWithColor(4, m.msg, termbox.ColorRed)
+	termbox.Flush()
 }
 
 func (m *CreateRoomForm) Update(msg pageMsg.PageMsg) Command {
