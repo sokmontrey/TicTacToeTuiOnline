@@ -128,7 +128,7 @@ func (m *GameRoom) connectAndListenToServer() {
 	m.conn = conn
 	for {
 		msgType, msg, err := conn.ReadMessage()
-		if err != nil || msgType == websocket.CloseMessage {
+		if err != nil {
 			m.pageManager.msg <- pageMsg.NewCloseMsg("Connection closed. Try again later")
 			return
 		}
@@ -136,6 +136,9 @@ func (m *GameRoom) connectAndListenToServer() {
 		err = json.Unmarshal(msg, &rawPayload)
 		if err != nil {
 			m.pageManager.msg <- pageMsg.NewErrMsg("Unable to parse server response")
+		}
+		if msgType == websocket.CloseMessage || rawPayload.Type == payload.ServerClosePayload {
+			m.pageManager.msg <- pageMsg.NewCloseMsg("Connection closed. Try again later")
 		}
 		if rawPayload.Type == payload.NonePayload {
 			continue

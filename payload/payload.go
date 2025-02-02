@@ -16,6 +16,7 @@ const (
 	ServerBoardUpdatePayload
 	ServerSyncPayload
 	ServerTerminationPayload
+	ServerClosePayload
 	ClientMoveCodePayload
 	NonePayload
 )

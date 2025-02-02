@@ -62,11 +62,16 @@ func (l *Lobby) handleJoin(c *gin.Context) {
 	roomId := c.Query("room-id")
 	room, rp := l.GetRoom(roomId)
 	if l.resWsError(conn, rp) {
-		log.Printf("Room not found")
+		log.Printf("Client tried to join room %s, but it is full", roomId)
 		return
 	}
 
-	// also handle full room
+	if room.IsFull() {
+		log.Printf("Client tried to join room %s, but it is full", roomId)
+		l.resWsError(conn, payload.NewClosePayload("Room is full"))
+		return
+	}
+
 	rp = room.HandleNewConnection(conn)
 	if l.resWsError(conn, rp) {
 		return
@@ -152,7 +157,7 @@ func (l *Lobby) CountRooms() int {
 func (l *Lobby) GetRoom(roomId string) (*Room, payload.RawPayload) {
 	_, ok := l.rooms[roomId]
 	if !ok {
-		return nil, payload.NewErrPayload("Room not found")
+		return nil, payload.NewClosePayload("Room not found")
 	}
 	return l.rooms[roomId], payload.NewNonePayload()
 }

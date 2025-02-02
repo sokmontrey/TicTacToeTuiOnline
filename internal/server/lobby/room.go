@@ -74,9 +74,6 @@ func (r *Room) globalBroadcast(payload payload.RawPayload) {
 func (r *Room) HandleNewConnection(conn *websocket.Conn) payload.RawPayload {
 	r.mu.Lock()
 	defer r.mu.Unlock()
-	if r.IsFull() {
-		return payload.NewErrPayload("Room is full")
-	}
 	clientId := r.AddClient(conn)
 	r.globalBroadcast(payload.NewJoinedPayload(clientId))
 
