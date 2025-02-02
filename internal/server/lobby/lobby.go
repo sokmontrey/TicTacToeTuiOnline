@@ -62,6 +62,7 @@ func (l *Lobby) handleJoin(c *gin.Context) {
 	roomId := c.Query("room-id")
 	room, rp := l.GetRoom(roomId)
 	if l.resWsError(conn, rp) {
+		log.Printf("Room not found")
 		return
 	}
 
@@ -100,6 +101,7 @@ func (l *Lobby) resWsError(conn *websocket.Conn, rp payload.RawPayload) bool {
 	if rp.Type != payload.NonePayload {
 		rp.WsSend(conn)
 		conn.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseInternalServerErr, ""))
+		conn.Close()
 		return true
 	}
 	return false

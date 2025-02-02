@@ -28,14 +28,12 @@ func NewGameRoom(pm *PageManager, roomId string) *GameRoom {
 		playerId:    1,
 		roomId:      roomId,
 		displayMsg:  "",
-		move:        make(chan payload.RawPayload),
 		game:        clientGame.NewGame(1),
 	}
 }
 
 func (m *GameRoom) Init() {
 	go m.connectAndListenToServer()
-	go m.listenForMove()
 	termbox.Clear(termbox.ColorDefault, termbox.ColorDefault)
 }
 
@@ -104,24 +102,15 @@ func (m *GameRoom) Update(msg pageMsg.PageMsg) Command {
 			return QuitCommand
 		}
 		moveCode := payload.KeyMsgToMoveCode(msg)
-		if moveCode != payload.MoveCodeNone {
-			m.move <- payload.NewMoveCodePayload(moveCode)
+		if moveCode == payload.MoveCodeNone {
+			return NoneCommand
+		}
+		err := payload.NewMoveCodePayload(moveCode).WsSend(m.conn)
+		if err != nil {
+			m.pageManager.msg <- pageMsg.NewErrMsg("Unable to send message to the server")
 		}
 	}
 	return NoneCommand
-}
-
-func (m *GameRoom) listenForMove() {
-	for {
-		select {
-		case move := <-m.move:
-			err := move.WsSend(m.conn)
-			if err != nil {
-				m.pageManager.msg <- pageMsg.NewErrMsg("Unable to send message to the server")
-				return
-			}
-		}
-	}
 }
 
 func (m *GameRoom) connectAndListenToServer() {
