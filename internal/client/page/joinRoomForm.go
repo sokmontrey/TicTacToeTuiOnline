@@ -3,7 +3,9 @@ package page
 import (
 	"fmt"
 	"github.com/eiannone/keyboard"
+	"github.com/nsf/termbox-go"
 	"github.com/sokmontrey/TicTacToeTuiOnline/internal/client/pageMsg"
+	"github.com/sokmontrey/TicTacToeTuiOnline/pkg"
 )
 
 type JoinRoomForm struct {
@@ -23,13 +25,15 @@ func NewJoinRoomForm(pm *PageManager) *JoinRoomForm {
 }
 
 func (m *JoinRoomForm) Init() {
+	termbox.Clear(termbox.ColorDefault, termbox.ColorDefault)
 }
 
 func (m *JoinRoomForm) Render() {
-	fmt.Print("\033[H\033[2J")
-	fmt.Println("Join an existing room")
-	fmt.Printf("Room id (4 digits number): %s_ \n", m.roomId)
-	fmt.Printf("%s\n", m.msg)
+	pkg.TUIWriteText(1, "TicTacToe Tui")
+	pkg.TUIWriteText(2, "Join an existing room")
+	pkg.TUIWriteText(3, fmt.Sprintf("Room id (4 digits number): %s_", m.roomId))
+	pkg.TUIWriteTextWithColor(4, m.msg, termbox.ColorRed)
+	termbox.Flush()
 }
 
 func (m *JoinRoomForm) Update(msg pageMsg.PageMsg) Command {
